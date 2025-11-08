@@ -7,10 +7,11 @@ namespace App\Traits;
 use Symfony\Component\Form\FormInterface;
 use Symfony\Component\HttpFoundation\Request;
 
-trait FormHandlerTrait {
+trait FormHandlerTrait
+{
+    private function handleForm(Request $request, FormInterface $form, ?array $removableTranslations = []): void
+    {
 
-    private function handleForm(Request $request, FormInterface $form, ?array $removableTranslations = []): void {
-    	
         $data = json_decode($request->getContent(), true);
         $clearMissing = 'PATCH' !== $request->getMethod();
 

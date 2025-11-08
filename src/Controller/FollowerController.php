@@ -1,122 +1,76 @@
-<?php 
+<?php
 
+// src/Controller/FollowerController.php
 namespace App\Controller;
 
-use App\Entity\Follower;
 use App\Entity\User;
-use App\Form\FollowerType;
-use App\Service\FollowerService; 
-use App\Manager\FollowerManager;
+use App\Repository\UserRepository;
+use App\Service\FollowerService;
 use App\Traits\ApiResponseTrait;
-use App\Traits\FormHandlerTrait;
 use FOS\RestBundle\Controller\AbstractFOSRestController;
-use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\{Response, Request};
 use Symfony\Component\Routing\Annotation\Route;
-use FOS\RestBundle\Controller\Annotations as Rest;
-use Symfony\Component\Form\FormFactoryInterface;
-use App\Repository\FollowerRepository; 
-use Symfony\Component\Serializer\SerializerInterface;
+use Symfony\Bundle\SecurityBundle\Security;
 
-/**
- * @Route("/api/followers")
- */
+#[Route('/api/follow')]
 class FollowerController extends AbstractFOSRestController
 {
     use ApiResponseTrait;
-    use FormHandlerTrait;
 
-    private $followerManager;
-    private $formFactory;
-    private $followerRepository;
-    private $serializer;
-    private $followerService;
-
-    public function __construct(FollowerManager $followerManager, FormFactoryInterface $formFactory, FollowerRepository $followerRepository, SerializerInterface $serializer, FollowerService $followerService)
-    {
-        $this->followerManager = $followerManager;
-        $this->formFactory = $formFactory;
-        $this->followerRepository = $followerRepository;
-        $this->serializer = $serializer;
-        $this->followerService = $followerService;
+    public function __construct(
+        private readonly Security $security,
+        private readonly UserRepository $users,
+        private readonly FollowerService $service
+    ) {
     }
 
-
-    /**
-     * @Rest\View(serializerGroups={"follower"})
-     * @Route("/", name="follower_list", methods={"GET"})
-     */
-    public function listFollowers()
+    #[Route('/{userId}', name: 'follow_user', methods: ['POST'])]
+    public function follow(string $userId): Response
     {
-        $followers = $this->followerRepository->findAll();
-        $serializeFollower =  $this->serializer->normalize($followers, null, ['groups' => ['get_follower']]);
-        return $this->createApiResponse($serializeFollower, Response::HTTP_OK);
-    }
-
-    /**
-     * @Rest\View(serializerGroups={"get_follower"})
-     * @Route("/{id}", name="follower_get", methods={"GET"})
-     */
-    public function getFollowerAction(Follower $follower)
-    {
-        $serializeFollower = $this->serializer->normalize($follower, null, ['groups' => ['get_follower']]);
-        return $this->createApiResponse($serializeFollower, Response::HTTP_OK);
-    }
-
-    /**
-     * @Route("/create", name="follower_create", methods={"POST"})
-     */
-    public function createFollowerAction(Request $request)
-    {
-        $follower = new Follower();
-        $form = $this->formFactory->create(FollowerType::class, $follower); // Use the custom form
-        $this->handleForm($request, $form);
-
-        if ($form->isValid()) {
-            $this->followerService->createFollowerWithChanel($follower);
-
-            return $this->renderCreatedResponse('Follower created successfully');
+        $me = $this->security->getUser();
+        if (!$me instanceof User) {
+            return $this->createApiResponse(['message' => 'Unauthorized'], Response::HTTP_UNAUTHORIZED);
         }
 
-        return $this->createApiResponse($form, Response::HTTP_BAD_REQUEST);
-    }
-
-    /**
-     * @Rest\View(serializerGroups={"follower"})
-     * @Route("/update/{id}", name="follower_update", methods={"PUT"})
-     */
-    public function updateFollowerAction(Request $request, Follower $follower)
-    {
-        $form = $this->formFactory->create(FollowerType::class, $follower); // Use the custom form
-        $this->handleForm($request, $form);
-
-        if ($form->isValid()) {
-            $this->followerManager->save($follower);
-            $this->followerManager->flush();
-
-            return $this->renderUpdatedResponse('Follower updated successfully');
+        $target = $this->users->find($userId);
+        if (!$target) {
+            return $this->createApiResponse(['message' => 'User not found'], Response::HTTP_NOT_FOUND);
         }
 
-        return $this->createApiResponse($form, Response::HTTP_BAD_REQUEST);
-    }
-
-    /**
-     * @Rest\View(serializerGroups={"follower"})
-     * @Route("/delete/{id}", name="follower_delete", methods={"DELETE"})
-     */
-    public function deleteFollowerAction(User $id)
-    {
-        $user = $this->getUser();
-
-        // Find the Follower entity by the provided ID and the authenticated user as the user
-        $follower = $this->followerManager->findFollowerByUserAndFollowerId($user, $id);
-
-        if (!$follower) {
-            return $this->createApiResponse(['error' => 'Follower not found.'], Response::HTTP_NOT_FOUND);
+        try {
+            $res = $this->service->follow($target, $me);
+        } catch (\InvalidArgumentException $e) {
+            return $this->createApiResponse(['message' => $e->getMessage()], Response::HTTP_BAD_REQUEST);
         }
 
-        $this->followerManager->removeFollower($follower);
+        return $this->createApiResponse([
+            'follower' => [
+                'id'       => $res['follower']->getId(),
+                'userId'   => $target->getId(),
+                'follower' => $me->getId(),
+            ],
+            'conversation' => [
+                'id'       => (string) $res['conversation']->getId(),
+                'athlete'  => $res['conversation']->getAthlete()->getId(),
+                'creator'  => $res['conversation']->getCreator()->getId(),
+            ],
+        ], Response::HTTP_CREATED);
+    }
 
-        return $this->renderDeletedResponse('Follower deleted successfully');
+    #[Route('/{userId}', name: 'unfollow_user', methods: ['DELETE'])]
+    public function unfollow(string $userId): Response
+    {
+        $me = $this->security->getUser();
+        if (!$me instanceof User) {
+            return $this->createApiResponse(['message' => 'Unauthorized'], Response::HTTP_UNAUTHORIZED);
+        }
+
+        $target = $this->users->find($userId);
+        if (!$target) {
+            return $this->createApiResponse(['message' => 'User not found'], Response::HTTP_NOT_FOUND);
+        }
+
+        $this->service->unfollow($target, $me);
+        return $this->createApiResponse(['message' => 'Unfollowed'], Response::HTTP_OK);
     }
 }

@@ -7,17 +7,18 @@ use Symfony\Component\Mercure\HubInterface;
 use Symfony\Component\Mercure\Update;
 use Symfony\Bundle\MercureBundle\Mercure;
 
-class MercureService{
-
+class MercureService
+{
     private $hub;
 
     public function __construct(HubInterface $hub)
     {
         $this->hub = $hub;
     }
-    
 
-    public function mercureMessage($data, $topic){
+
+    public function mercureMessage($data, $topic)
+    {
         // Ici, vous ajoutez le topic à l'URL
         $topicUrl = '/chat_room/' . $topic;
 
@@ -27,8 +28,8 @@ class MercureService{
         "user_id" => $data['user_id'],
         "value" => $data['message_value'],
         "createdAt" => $data['message_date'],
-    ]), false);
-        
+        ]), false);
+
         // Publier l'update
         try {
             $this->hub->publish($update);
@@ -41,18 +42,19 @@ class MercureService{
             error_log($e->getMessage());
             return [
                 'code' => 500,
-                'message' => 'Erreur lors de la publication : '. $e
+                'message' => 'Erreur lors de la publication : ' . $e
             ];
         }
     }
-    public function mercureRoom($message, $topic){
+    public function mercureRoom($message, $topic)
+    {
         $topic = 8;
         // Ici, vous ajoutez le topic à l'URL
         $topicUrl = 'select_room_' . $topic;
 
         // Créer un nouvel objet Update avec l'URL du topic
         $update = new Update($topicUrl, json_encode(['message' => $message]), false);
-        
+
         // Publier l'update
         try {
             $this->hub->publish($update);
@@ -65,9 +67,8 @@ class MercureService{
             error_log($e->getMessage());
             return [
                 'code' => 500,
-                'message' => 'Erreur lors de la publication : '. $e
+                'message' => 'Erreur lors de la publication : ' . $e
             ];
         }
     }
-    
 }

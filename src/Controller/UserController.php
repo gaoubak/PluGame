@@ -3,169 +3,375 @@
 namespace App\Controller;
 
 use App\Entity\User;
-use App\Entity\Chanel;
+use App\Entity\Bookmark;
+use App\Form\RegistrationFormType;
 use App\Manager\UserManager;
 use App\Repository\UserRepository;
+use App\Repository\BookmarkRepository;
 use App\Traits\ApiResponseTrait;
 use App\Traits\FormHandlerTrait;
-use FOS\RestBundle\Controller\AbstractFOSRestController;
+use Doctrine\ORM\EntityManagerInterface;
+use Doctrine\Persistence\ObjectManager;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Annotation\Route;
-use FOS\RestBundle\Controller\Annotations as Rest;
-use Symfony\Component\Form\FormFactoryInterface;
-use Symfony\Component\PasswordHasher\PasswordHasherInterface;
-use App\Form\RegistrationFormType;
-use App\Form\UserType;
+use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
+use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Security\Http\Attribute\CurrentUser;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\Serializer\SerializerInterface;
 
-
-/**
- * @Route("/api/users")
- */
-class UserController extends AbstractFOSRestController
+#[Route('/api/users')]
+class UserController extends AbstractController
 {
     use ApiResponseTrait;
     use FormHandlerTrait;
 
-    private $userManager;
-    private $formFactory;
-    private $userRepository;
-    private $serializer;
-
-    public function __construct(UserManager $userManager, FormFactoryInterface $formFactory, UserRepository $userRepository, SerializerInterface $serializer)
-    {
-        $this->userManager = $userManager;
-        $this->formFactory = $formFactory;
-        $this->userRepository = $userRepository;
-        $this->serializer = $serializer;
+    public function __construct(
+        private readonly UserManager $userManager,
+        private readonly UserRepository $userRepository,
+        private readonly BookmarkRepository $bookmarkRepository,
+        private readonly SerializerInterface $serializer,
+        private readonly EntityManagerInterface $em,
+        private readonly UserPasswordHasherInterface $passwordHasher,
+    ) {
     }
 
-    /**
-     * @Rest\View(serializerGroups={"get_user"})
-     * @Route("/current", name="get_current_user", methods={"GET"})
-     */
+    #[Route('/current', name: 'get_current_user', methods: ['GET'])]
+    #[IsGranted('IS_AUTHENTICATED_FULLY')]
     public function getCurrentUserAction()
     {
         $user = $this->getUser();
 
-        $serializedUser = $this->serializer->normalize($user, null, ['groups' => ['get_current_user']]);
+        $serializedUser = $this->serializer->normalize($user, null, ['groups' => ['user:read']]);
         return $this->createApiResponse($serializedUser, Response::HTTP_OK);
     }
 
     /**
-     * @Rest\View(serializerGroups={"get_user"})
-     * @Route("/current-follower", name="get_current_user_follower", methods={"GET"})
+     * List all users (basic)
      */
-    public function getCurrentUserFollowerAction()
+    #[Route('/', name: 'list_user', methods: ['GET'])]
+    public function listUsers(Request $request): JsonResponse
     {
-        $user = $this->getUser();
-        $followers = $user->getFollowers();
+        $page = max(1, (int) $request->query->get('page', 1));
+        $limit = min(100, max(1, (int) $request->query->get('limit', 20)));
 
-        $followersData = [];
-        foreach ($followers as $follower) {
-            $followersData[] = [
-                'id' => $follower->getFollower()->getId(),
-                'username' => $follower->getFollower()->getUsername(),
-                'email' => $follower->getFollower()->getEmail(),
-                'userPhoto' => $follower->getFollower()->getUserPhoto(),
-                'description' => $follower->getFollower()->getDescription(),
-            ];
+        $users = $this->userRepository->findAll();
+
+        $data = $this->serializer->normalize($users, null, [
+            'groups' => ['user:read']
+        ]);
+
+        return $this->createApiResponse([
+            'users' => $data,
+            'total' => count($users),
+            'page' => $page,
+            'limit' => $limit,
+        ], Response::HTTP_OK);
+    }
+
+    /**
+     * Search users (fields available on this User entity)
+     */
+    #[Route('/search', name: 'search_users', methods: ['GET'])]
+    public function searchUsers(Request $request): JsonResponse
+    {
+        $query = (string) $request->query->get('query', '');
+        $sport = $request->query->get('sport');
+        $location = $request->query->get('location');
+        $verified = $request->query->get('verified');
+        $page = max(1, (int) $request->query->get('page', 1));
+        $limit = min(100, max(1, (int) $request->query->get('limit', 20)));
+
+        $qb = $this->userRepository->createQueryBuilder('u');
+
+        if ($query !== '') {
+            $qb->andWhere(
+                'u.username LIKE :q OR u.email LIKE :q OR u.bio LIKE :q OR u.fullName LIKE :q'
+            )->setParameter('q', "%{$query}%");
         }
 
-        return $this->createApiResponse($followersData, Response::HTTP_OK);
+        if ($sport) {
+            $qb->andWhere('u.sport = :sport')->setParameter('sport', $sport);
+        }
+
+        if ($location) {
+            $qb->andWhere('u.location = :location')->setParameter('location', $location);
+        }
+
+        if ($verified === 'true' || $verified === '1') {
+            // your User entity doesn't have isVerified in the trimmed version;
+            // if it does exist in DB add this line, otherwise ignore it.
+            if ($this->userRepository->getClassMetadata()->hasField('isVerified')) {
+                $qb->andWhere('u.isVerified = true');
+            }
+        }
+
+        $users = $qb->getQuery()->getResult();
+
+        $data = $this->serializer->normalize($users, null, [
+            'groups' => ['user:read']
+        ]);
+
+        return $this->createApiResponse([
+            'users' => $data,
+            'total' => count($users),
+            'page' => $page,
+            'limit' => $limit,
+        ], Response::HTTP_OK);
     }
 
     /**
-     * @Rest\View(serializerGroups={""})
-     * @Route("/current-chanel", name="get_current_user_chanel", methods={"GET"})
+     * Get a specific user by ID
      */
-    public function getCurrentUserChanlAction()
+    #[Route('/{id}', name: 'get_user', methods: ['GET'])]
+    public function getUserById(User $user): JsonResponse
     {
-        $user = $this->getUser();
-        $serializedUser = $this->serializer->normalize($user, null, ['groups' => ['get_current_user_chanel']]);
-        return $this->createApiResponse($serializedUser, Response::HTTP_OK);
-    }
+        $data = $this->serializer->normalize($user, null, [
+            'groups' => ['user:read']
+        ]);
 
-
-    /**
-     * @Rest\View(serializerGroups={"get_user"})
-     * @Route("/", name="list_user", methods={"GET"})
-     */
-    public function listUsers()
-    {
-        $users = $this->userRepository->findAll();
-        $serializedUsers = $this->serializer->normalize($users, null, ['groups' => ['get_user']]);
-        return $this->createApiResponse($serializedUsers, Response::HTTP_OK);
- 
+        return $this->createApiResponse($data, Response::HTTP_OK);
     }
 
     /**
-     * @Rest\View(serializerGroups={"get_user"})
-     * @Route("/{id}", name="get_user", methods={"GET"})
+     * Register a new user
      */
-    public function getUserAction(User $user)
-    {
-        $serializedUsers = $this->serializer->normalize($user, null, ['groups' => ['get_user']]);
-        return $this->createApiResponse($serializedUsers, Response::HTTP_OK);
-    }
-
-
-    /**
-     * @Rest\View(serializerGroups={"user"})
-     * @Route("/register", name="create_user", methods={"POST"})
-     */
-    public function register(Request $request): Response
+    #[Route('/register', name: 'create_user', methods: ['POST'])]
+    public function register(Request $request): JsonResponse
     {
         $user = new User();
         $form = $this->createForm(RegistrationFormType::class, $user);
         $this->handleForm($request, $form);
 
-        if ($form->isSubmitted() && $form->isValid()) {
-            $plainPassword = $form->get('plainPassword')->getData();
-            $hashedPassword = password_hash($plainPassword, PASSWORD_DEFAULT); // Use password_hash
-            $user->setPassword($hashedPassword);
-            
-            $this->userManager->save($user);
-            $this->userManager->flush();
-
-            return $this->renderCreatedResponse('User registered successfully');
+        if (!$form->isSubmitted() || !$form->isValid()) {
+            return $this->createApiResponse([
+                'message' => 'User registration failed',
+                'errors' => $this->getFormErrors($form)
+            ], Response::HTTP_BAD_REQUEST);
         }
 
-        // If the form is not valid, you can return an error response
-        return $this->createApiResponse(['message' => 'User registration failed', 'errors' => $form->getErrors()], Response::HTTP_BAD_REQUEST);
+        $plainPassword = $form->get('plainPassword')->getData();
+        $hashedPassword = $this->passwordHasher->hashPassword($user, $plainPassword);
+        $user->setPassword($hashedPassword);
+
+        $this->userManager->save($user);
+        $this->userManager->flush();
+
+        $data = [
+            'id' => $user->getId(),
+            'email' => $user->getEmail(),
+            'username' => $user->getUsername(),
+            'message' => 'User registered successfully'
+        ];
+
+        return $this->createApiResponse($data, Response::HTTP_CREATED);
     }
 
     /**
-     * @Rest\View(serializerGroups={"user"})
-     * @Route("/update", name="update_current_user", methods={"PUT"})
+     * Update current user profile
      */
-    public function updateCurrentUser(Request $request)
-    {
-        $user = $this->getUser();
-        $form = $this->formFactory->create(UserType::class, $user);
-        $this->handleForm($request, $form);
+    #[Route('/update', name: 'update_current_user', methods: ['PUT', 'PATCH'])]
+    #[IsGranted('IS_AUTHENTICATED_FULLY')]
+    public function updateCurrentUser(
+        Request $request,
+        #[CurrentUser] User $user
+    ): JsonResponse {
+        $payload = json_decode($request->getContent(), true) ?? [];
 
-        if ($form->isValid()) {
-
-            $this->userManager->save($user);
-            $this->userManager->flush();
-
-            return $this->renderUpdatedResponse('User updated successfully');
+        // Map allowed fields from incoming payload to actual entity fields
+        if (isset($payload['username'])) {
+            $user->setUsername((string)$payload['username']);
         }
+        if (isset($payload['email'])) {
+            $user->setEmail((string)$payload['email']);
+        }
+        if (isset($payload['fullName'])) {
+            $user->setFullName((string)$payload['fullName']);
+        }
+        if (isset($payload['bio'])) {
+            $user->setBio((string)$payload['bio']);
+        }
+        if (isset($payload['avatarUrl'])) {
+            $user->setAvatarUrl((string)$payload['avatarUrl']);
+        }
+        if (isset($payload['coverUrl'])) {
+            $user->setCoverUrl((string)$payload['coverUrl']);
+        }
+        if (isset($payload['sport'])) {
+            $user->setSport((string)$payload['sport']);
+        }
+        if (isset($payload['location'])) {
+            $user->setLocation((string)$payload['location']);
+        }
+        // roles and other sensitive fields should be managed by admin flows
 
-         return $this->createApiResponse($form->getErrors(true), Response::HTTP_BAD_REQUEST);
-    }           
+        $this->em->flush();
 
+        return $this->createApiResponse([
+            'id' => $user->getId(),
+            'email' => $user->getEmail(),
+            'username' => $user->getUsername(),
+            'roles' => $user->getRoles(),
+            'message' => 'User updated successfully'
+        ]);
+    }
 
     /**
-     * @Rest\View(serializerGroups={"user"})
-     * @Route("/delete/{id}", name="delete_user", methods={"DELETE"})
+     * Update online status (kept for compatibility if your entity has it)
      */
-    public function deleteUser(User $user)
+    #[Route('/me/status', name: 'update_online_status', methods: ['POST'])]
+    #[IsGranted('IS_AUTHENTICATED_FULLY')]
+    public function updateOnlineStatus(
+        Request $request,
+        #[CurrentUser] User $user
+    ): JsonResponse {
+        $data = json_decode($request->getContent(), true);
+        $status = $data['status'] ?? null;
+
+        // Only set if field exists on entity
+        if (method_exists($user, 'setOnlineStatus') && $status !== null) {
+            $user->setOnlineStatus($status);
+            if (method_exists($user, 'updateLastSeen')) {
+                $user->updateLastSeen();
+            }
+            $this->em->flush();
+        }
+
+        return $this->createApiResponse([
+            'status' => 'ok',
+            'onlineStatus' => method_exists($user, 'getOnlineStatus') ? $user->getOnlineStatus() : null,
+            'lastSeenAt' => method_exists($user, 'getLastSeenAt') ? $user->getLastSeenAt()?->format('c') : null,
+        ]);
+    }
+
+    /**
+     * Heartbeat to keep user online (if supported)
+     */
+    #[Route('/me/heartbeat', name: 'heartbeat', methods: ['POST'])]
+    #[IsGranted('IS_AUTHENTICATED_FULLY')]
+    public function heartbeat(#[CurrentUser] User $user): JsonResponse
+    {
+        if (method_exists($user, 'updateLastSeen')) {
+            $user->updateLastSeen();
+            $this->em->flush();
+        }
+        return $this->createApiResponse(['status' => 'ok']);
+    }
+
+    /**
+     * Get current user's bookmarks
+     */
+    #[Route('/me/bookmarks', name: 'get_bookmarks', methods: ['GET'])]
+    #[IsGranted('IS_AUTHENTICATED_FULLY')]
+    public function getBookmarks(#[CurrentUser] User $user): JsonResponse
+    {
+        $bookmarks = $this->bookmarkRepository->findBy(['user' => $user]);
+
+        $data = array_map(fn(Bookmark $b) => [
+            'id' => $b->getId(),
+            'targetUserId' => $b->getTargetUser()->getId(),
+            'note' => $b->getNote(),
+            'collection' => $b->getCollection(),
+            'createdAt' => method_exists($b, 'getCreatedAt') ? $b->getCreatedAt()?->format('c') : null,
+        ], $bookmarks);
+
+        return $this->createApiResponse($data);
+    }
+
+    /**
+     * Add bookmark (bookmarks current user -> target user)
+     */
+    #[Route('/{id}/bookmark', name: 'add_bookmark', methods: ['POST'])]
+    #[IsGranted('IS_AUTHENTICATED_FULLY')]
+    public function addBookmark(
+        User $targetUser,
+        #[CurrentUser] User $currentUser
+    ): JsonResponse {
+        // Prevent bookmarking self
+        if ($targetUser->getId() === $currentUser->getId()) {
+            return $this->createApiResponse(['message' => 'Cannot bookmark yourself'], Response::HTTP_BAD_REQUEST);
+        }
+
+        $existing = $this->bookmarkRepository->findOneBy([
+            'user' => $currentUser,
+            'targetUser' => $targetUser
+        ]);
+
+        if ($existing) {
+            return $this->createApiResponse(['message' => 'Already bookmarked'], Response::HTTP_OK);
+        }
+
+        $bookmark = new Bookmark($currentUser, $targetUser);
+        $this->em->persist($bookmark);
+        $this->em->flush();
+
+        return $this->createApiResponse([
+            'message' => 'Bookmark added',
+            'bookmarkId' => $bookmark->getId(),
+            'userId' => $targetUser->getId(),
+        ], Response::HTTP_CREATED);
+    }
+
+    /**
+     * Remove bookmark
+     */
+    #[Route('/{id}/bookmark', name: 'remove_bookmark', methods: ['DELETE'])]
+    #[IsGranted('IS_AUTHENTICATED_FULLY')]
+    public function removeBookmark(
+        User $targetUser,
+        #[CurrentUser] User $currentUser
+    ): JsonResponse {
+        $existing = $this->bookmarkRepository->findOneBy([
+            'user' => $currentUser,
+            'targetUser' => $targetUser
+        ]);
+
+        if (!$existing) {
+            return $this->createApiResponse(['message' => 'Not bookmarked'], Response::HTTP_NOT_FOUND);
+        }
+
+        $this->em->remove($existing);
+        $this->em->flush();
+
+        return $this->createApiResponse(['message' => 'Bookmark removed']);
+    }
+
+    /**
+     * Delete a user by ID (admin only)
+     */
+    #[Route('/delete/{id}', name: 'delete_user', methods: ['DELETE'])]
+    #[IsGranted('ROLE_ADMIN')]
+    public function deleteUser(User $user): JsonResponse
     {
         $this->userManager->removeUser($user);
 
-        return $this->renderDeletedResponse('User deleted successfully');
+        return $this->createApiResponse([
+            'message' => 'User deleted successfully'
+        ], Response::HTTP_OK);
+    }
+
+    /**
+     * Helper: Extract form errors recursively
+     */
+    private function getFormErrors($form): array
+    {
+        $errors = [];
+
+        foreach ($form->getErrors(true) as $error) {
+            $errors[] = $error->getMessage();
+        }
+
+        foreach ($form->all() as $childForm) {
+            if ($childForm instanceof \Symfony\Component\Form\FormInterface) {
+                $childErrors = $this->getFormErrors($childForm);
+                if (!empty($childErrors)) {
+                    $errors[$childForm->getName()] = $childErrors;
+                }
+            }
+        }
+
+        return $errors;
     }
 }

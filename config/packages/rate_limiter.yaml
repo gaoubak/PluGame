@@ -1,0 +1,34 @@
+framework:
+    rate_limiter:
+        # 🔒 Login Rate Limiting: Prevent brute force attacks
+        login:
+            policy: 'sliding_window'
+            limit: 5
+            interval: '15 minutes'
+            lock_factory: 'lock.default.factory'
+
+        # 🔒 General API Rate Limiting: Prevent API abuse
+        api:
+            policy: 'token_bucket'
+            limit: 100
+            rate:
+                interval: '1 minute'
+                amount: 100
+
+        # 🔒 Password Reset Rate Limiting: Prevent password reset abuse
+        password_reset:
+            policy: 'sliding_window'
+            limit: 3
+            interval: '1 hour'
+
+        # 🔒 Token Refresh Rate Limiting: Prevent refresh token abuse
+        token_refresh:
+            policy: 'sliding_window'
+            limit: 10
+            interval: '1 hour'
+
+        # 🔒 User Registration Rate Limiting: Prevent spam accounts
+        registration:
+            policy: 'sliding_window'
+            limit: 3
+            interval: '1 hour'

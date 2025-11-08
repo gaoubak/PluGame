@@ -1,94 +1,73 @@
-<?php 
+<?php
 
+// src/Service/FollowerService.php
 namespace App\Service;
 
 use App\Entity\Follower;
-use App\Entity\Chanel;
 use App\Entity\User;
-use App\Entity\Association;
+use App\Entity\Conversation;
+use App\Repository\FollowerRepository;
+use App\Repository\ConversationRepository;
 use Doctrine\ORM\EntityManagerInterface;
 
-class FollowerService
+final class FollowerService
 {
-    private $entityManager;
-
-    public function __construct(EntityManagerInterface $entityManager)
-    {
-        $this->entityManager = $entityManager;
+    public function __construct(
+        private readonly EntityManagerInterface $em,
+        private readonly FollowerRepository $followers,
+        private readonly ConversationRepository $conversations
+    ) {
     }
 
-    public function createFollowerWithChanel(Follower $follower): Follower
+    /**
+     * Create a follow (if not already) and a conversation (if not already).
+     * @return array{follower:Follower, conversation:Conversation}
+     */
+    public function follow(User $target, User $follower): array
     {
-        $chanel = $this->createChanel();
-        
-        $follower->setChannel($chanel);
+        if ($target->getId() === $follower->getId()) {
+            throw new \InvalidArgumentException('You cannot follow yourself.');
+        }
 
-        $this->entityManager->persist($chanel);
-        $this->entityManager->persist($follower);
-        $this->entityManager->flush();
+        // 1) ensure Follower row exists
+        $row = $this->followers->findOneByUserAndFollower($target, $follower);
+        if (!$row) {
+            $row = (new Follower())
+                ->setFollower($target)
+                ->setFollowing($follower);
+            $this->em->persist($row);
+        }
 
-        $this->createAssociationsForChannelMembers($follower, $chanel);
-
-        return $follower;
-    }
-
-    public function createFollowerWithoutChanel($users,Chanel $chanel)
-    {        
-        $this->createAssociationsForAddChannelMembers($chanel, $users);
-
-    }
-
-
-    private function createChanel(): Chanel
-    {
-        $chanel = new Chanel();
-        $chanel->setNom("Follower");
-        $this->entityManager->persist($chanel);
-
-        return $chanel;
-    }
-
-    private function createAssociationsForAddChannelMembers(Chanel $chanel, array $users): void
-    {
-        foreach ($users as $user) {
-            // Ensure that $user is not null
-            if ($user instanceof User) {
-                // Create associations for the user
-                $userAssociation = new Association();
-                $userAssociation->setUser($user);
-                $userAssociation->setChanel($chanel);
-                $this->entityManager->persist($userAssociation);
+        // 2) ensure a Conversation between both exists
+        $conv = $this->conversations->findBetweenUsers($target, $follower);
+        if (!$conv) {
+            $athlete = $follower->getAthleteProfile() ? $follower : ($target->getAthleteProfile() ? $target : $follower);
+            $creator = $athlete === $follower ? $target : $follower;
+            if (!$creator->getCreatorProfile() && $athlete === $target) {
+                // fallback swap to keep roles consistent
+                $athlete = $follower;
+                $creator = $target;
             }
+
+            $conv = (new Conversation())
+                ->setAthlete($athlete)
+                ->setCreator($creator);
+
+            $this->em->persist($conv);
         }
 
-        // Flush the associations
-        $this->entityManager->flush();
+        $this->em->flush();
+
+        return ['follower' => $row, 'conversation' => $conv];
     }
 
-
-    private function createAssociationsForChannelMembers(Follower $follower, Chanel $chanel): void
+    /** Unfollow (does not delete the conversation) */
+    public function unfollow(User $target, User $follower): void
     {
-        $user = $follower->getUser();
-        $followerUser = $follower->getFollower();
-
-        // Ensure that $user and $followerUser are not null
-        if ($user && $followerUser) {
-            // Create associations for the user
-            $userAssociation = new Association();
-            $userAssociation->setUser($user);
-            $userAssociation->setChanel($chanel);
-            $this->entityManager->persist($userAssociation);
-
-            // Create associations for the follower user
-            $followerAssociation = new Association();
-            $followerAssociation->setUser($followerUser);
-            $followerAssociation->setChanel($chanel);
-            $this->entityManager->persist($followerAssociation);
-
-            // Flush the associations
-            $this->entityManager->flush();
+        $row = $this->followers->findOneByUserAndFollower($target, $follower);
+        if ($row) {
+            $this->em->remove($row);
+            $this->em->flush();
         }
     }
-
-    
 }

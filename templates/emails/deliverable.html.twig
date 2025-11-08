@@ -1,0 +1,140 @@
+{# templates/emails/deliverable.html.twig #}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #374151;
+            background-color: #f9fafb;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            background: linear-gradient(135deg, #EC1961 0%, #B112A9 100%);
+            padding: 40px 30px;
+            text-align: center;
+        }
+        .header h1 {
+            color: #ffffff;
+            margin: 0;
+            font-size: 28px;
+            font-weight: 900;
+        }
+        .content {
+            padding: 40px 30px;
+        }
+        .content p {
+            margin: 0 0 20px 0;
+            font-size: 16px;
+        }
+        .highlight {
+            background: #f3f4f6;
+            border-left: 4px solid #EC1961;
+            padding: 16px 20px;
+            margin: 24px 0;
+            border-radius: 8px;
+        }
+        .highlight strong {
+            color: #1f2937;
+        }
+        .button {
+            display: inline-block;
+            background: linear-gradient(135deg, #EC1961 0%, #B112A9 100%);
+            color: #ffffff !important;
+            text-decoration: none;
+            padding: 16px 40px;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 16px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .button:hover {
+            opacity: 0.9;
+        }
+        .info-box {
+            background: #fef3c7;
+            border: 1px solid #fde68a;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 24px 0;
+        }
+        .info-box p {
+            margin: 0;
+            color: #92400e;
+            font-size: 14px;
+        }
+        .footer {
+            background: #f9fafb;
+            padding: 30px;
+            text-align: center;
+            font-size: 14px;
+            color: #6b7280;
+        }
+        .footer a {
+            color: #EC1961;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📦 Your Files Are Ready!</h1>
+        </div>
+
+        <div class="content">
+            <p>Bonjour,</p>
+
+            <p><strong>{{ creatorName }}</strong> has uploaded your deliverables for <strong>{{ serviceTitle }}</strong>.</p>
+
+            <div class="highlight">
+                <strong>Download your files now:</strong><br>
+                Click the button below to download a ZIP archive with all your high-quality files.
+            </div>
+
+            <center>
+                <a href="{{ downloadUrl }}" class="button">📥 Download Files</a>
+            </center>
+
+            <div class="info-box">
+                <p>⏰ <strong>Important:</strong> This download link expires in {{ expiresIn }}. Make sure to download your files soon!</p>
+            </div>
+
+            <p><strong>What's included:</strong></p>
+            <ul>
+                <li>All high-resolution photos and videos</li>
+                <li>Edited and final versions</li>
+                <li>Ready to use and share</li>
+            </ul>
+
+            <p>If you have any questions or issues with your files, please reply to this email or contact <strong>{{ creatorName }}</strong> directly through the Plugame app.</p>
+
+            <p>Thank you for using Plugame!</p>
+
+            <p>L'équipe Plugame</p>
+        </div>
+
+        <div class="footer">
+            <p>This email was sent by <a href="https://plugame.app">Plugame</a></p>
+            <p>Booking ID: {{ bookingId }}</p>
+            <p>Need help? Contact us at <a href="mailto:support@plugame.app">support@plugame.app</a></p>
+        </div>
+    </div>
+
+    <!-- ✅ TRACKING PIXEL (triggers payout when email is opened) -->
+    <img src="{{ trackingUrl }}" width="1" height="1" style="display:none;" alt="">
+</body>
+</html>

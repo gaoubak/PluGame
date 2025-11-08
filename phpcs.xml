@@ -1,0 +1,70 @@
+<?xml version="1.0"?>
+<ruleset name="23HEC001 Coding Standard">
+    <description>PSR-12 coding standard with custom rules</description>
+
+    <!-- Show progress -->
+    <arg value="p"/>
+    <!-- Show colors in output -->
+    <arg name="colors"/>
+    <!-- Show sniff names in report -->
+    <arg value="s"/>
+
+    <!-- Paths to check -->
+    <file>src/</file>
+    <file>tests/</file>
+
+    <!-- Exclude patterns -->
+    <exclude-pattern>*/vendor/*</exclude-pattern>
+    <exclude-pattern>*/var/*</exclude-pattern>
+    <exclude-pattern>*/migrations/*</exclude-pattern>
+    <exclude-pattern>*/public/*</exclude-pattern>
+    <exclude-pattern>*/config/*</exclude-pattern>
+
+    <!-- Use PSR-12 as the base standard -->
+    <rule ref="PSR12"/>
+
+    <!-- Additional rules -->
+
+    <!-- Require strict types declaration -->
+    <rule ref="Generic.PHP.RequireStrictTypes"/>
+
+    <!-- Disallow short open tags -->
+    <rule ref="Generic.PHP.DisallowShortOpenTag"/>
+
+    <!-- Enforce one class per file -->
+    <rule ref="Generic.Files.OneClassPerFile"/>
+    <rule ref="Generic.Files.OneInterfacePerFile"/>
+    <rule ref="Generic.Files.OneTraitPerFile"/>
+
+    <!-- Cyclomatic complexity (max 10) -->
+    <rule ref="Generic.Metrics.CyclomaticComplexity">
+        <properties>
+            <property name="complexity" value="10"/>
+            <property name="absoluteComplexity" value="15"/>
+        </properties>
+    </rule>
+
+    <!-- Nesting level (max 5) -->
+    <rule ref="Generic.Metrics.NestingLevel">
+        <properties>
+            <property name="nestingLevel" value="5"/>
+            <property name="absoluteNestingLevel" value="7"/>
+        </properties>
+    </rule>
+
+    <!-- Function length (max 100 lines) -->
+    <rule ref="Generic.Files.LineLength">
+        <properties>
+            <property name="lineLimit" value="120"/>
+            <property name="absoluteLineLimit" value="150"/>
+        </properties>
+    </rule>
+
+    <!-- No TODO comments in production code -->
+    <rule ref="Generic.Commenting.Todo">
+        <severity>3</severity>
+    </rule>
+
+    <!-- Disallow empty catch blocks -->
+    <rule ref="Generic.CodeAnalysis.EmptyStatement"/>
+</ruleset>

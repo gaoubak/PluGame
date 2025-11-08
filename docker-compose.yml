@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   alpine:
     build:
@@ -16,11 +14,11 @@ services:
       - database
 
   nginx:
-    image: nginx:alpine 
+    image: nginx:alpine
     container_name: symfony_nginx
     restart: unless-stopped
     ports:
-      - 8090:80
+      - "8090:80"
     volumes:
       - .:/var/www/html/
       - ./nginx/conf.d:/etc/nginx/conf.d
@@ -37,7 +35,6 @@ services:
       - "3306:3306"
     environment:
       MYSQL_ROOT_PASSWORD: root
-      MYSQL_ROOT_: root
       MYSQL_DATABASE: chat2_db
     networks:
       - symfony
@@ -45,33 +42,34 @@ services:
       - db-data:/var/lib/mysql
       - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
 
+  # ✅ Use the official image; no custom Dockerfile needed.
   caddy:
-    build:
-      context: .
-      dockerfile: Dockerfile.caddy
-    image: dunglas/mercure
-    restart: unless-stopped
+    image: dunglas/mercure:v0.15
     container_name: mercure_docker
+    restart: unless-stopped
     environment:
+      # Listen on port 80 inside the container
       SERVER_NAME: ":80"
+
+      # JWT secrets (must match Symfony's MERCURE_JWT_SECRET)
       MERCURE_PUBLISHER_JWT_KEY: "8c1f0ba78cabd4ea856a4945f9ec94f7ddbaecca3315ab52d175c3a47415dcfb"
       MERCURE_SUBSCRIBER_JWT_KEY: "8c1f0ba78cabd4ea856a4945f9ec94f7ddbaecca3315ab52d175c3a47415dcfb"
-      MERCURE_EXTRA_DIRECTIVES: |  
-        cors_origins http://localhost:3000 
-        cors_origins http://localhost:8090 
+      MERCURE_PUBLISHER_JWT_ALG: HS256
+      MERCURE_SUBSCRIBER_JWT_ALG: HS256
+
+      # Dev-friendly CORS + allow anonymous subscriptions if you want to test without tokens
+      MERCURE_EXTRA_DIRECTIVES: |
+        cors_origins *
         anonymous
-    command: /usr/bin/caddy run -config /etc/caddy/Caddyfile.dev --adapter caddyfile --config /etc/caddy/Caddyfile
-    volumes:
-      - caddy_data:/data
-      - caddy_config:/config
+        # If you want to restrict in dev instead of *, use:
+        # cors_origins http://localhost:8090 http://127.0.0.1:8090 http://10.0.2.2:8090 http://localhost:3000
+
+    ports:
+      - "9090:80"  # public Mercure hub
     networks:
       - symfony
-    ports:
-        - "9090:80"
-        - "80"
 
-
-  phpmyadmin: 
+  phpmyadmin:
     image: phpmyadmin/phpmyadmin
     container_name: symfony_phpmyadmin
     restart: always
@@ -80,18 +78,17 @@ services:
       PMA_USER: root
       PMA_PASSWORD: root
     ports:
-      - 8181:80  
+      - "8181:80"
     depends_on:
       - database
     networks:
       - symfony
-      
+
 networks:
   symfony:
     driver: bridge
 
 volumes:
   db-data:
-  mercure_data:
   caddy_data:
   caddy_config:

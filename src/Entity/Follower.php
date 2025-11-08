@@ -1,71 +1,35 @@
-<?php 
+<?php
 
 namespace App\Entity;
 
-
+use App\Entity\User;
+use App\Entity\Traits\Timestamps;
+use App\Entity\Traits\UuidId;
 use Doctrine\ORM\Mapping as ORM;
-use App\Entity\Chanel;
 use Symfony\Component\Serializer\Annotation\Groups;
-use JMS\Serializer\Annotation\MaxDepth;
 
-/**
- * @ORM\Entity()
- * @ORM\Table(name="follower" , uniqueConstraints={
- *     @ORM\UniqueConstraint(columns={"user_id", "follower_id"})
- * }))
- */
+#[ORM\Entity]
+#[ORM\Table(name: 'follower')]
+#[ORM\UniqueConstraint(name: 'uniq_user_follower', columns: ['user_id', 'follower_id'])]
+#[ORM\HasLifecycleCallbacks]
 class Follower
 {
-   
-    /**
-     * @ORM\Id
-     * @ORM\GeneratedValue
-     * @ORM\Column(type="integer")
-     * @Groups({"get_follower", "get_chanel", "get_user","get_current_user_follower"})
-     */
-    private $id;
+    use UuidId;
+    use Timestamps;
 
-    /**
-     * @ORM\ManyToOne(targetEntity="User")
-     * @ORM\JoinColumn(name="user_id", referencedColumnName="id")
-     * @Groups({"get_follower", "get_chanel"})
-     */
-    private $user;
+    // The user being followed
+    #[ORM\ManyToOne(targetEntity: User::class)]
+    #[ORM\JoinColumn(name: 'user_id', referencedColumnName: 'id', nullable: false, onDelete: 'CASCADE')]
+    #[Groups(['get_follower', 'get_chanel'])]
+    private ?User $follower = null;
 
-    /**
-     * @ORM\ManyToOne(targetEntity="User")
-     * @ORM\JoinColumn(name="follower_id", referencedColumnName="id")
-     * @Groups({"get_follower", "get_chanel", "get_user","get_current_user_follower"})
-     * @MaxDepth(1)
-     */
-    private $follower;
+    // The follower (who follows $user)
+    #[ORM\ManyToOne(targetEntity: User::class)]
+    #[ORM\JoinColumn(name: 'follower_id', referencedColumnName: 'id', nullable: false, onDelete: 'CASCADE')]
+    #[Groups(['get_follower', 'get_chanel', 'get_user', 'get_current_user_follower'])]
+    private ?User $following = null;
 
 
-
-     /**
-     * @ORM\ManyToOne(targetEntity="Chanel")
-     * @ORM\JoinColumn(name="chanel_id", referencedColumnName="id")
-     * @Groups({"get_follower", "get_chanel", "get_current_user_follower"})
-     */
-    private $channel;
-
-
-    public function getId(): ?int
-    {
-        return $this->id;
-    }
-
-    public function getUser(): ?User
-    {
-        return $this->user;
-    }
-
-    public function setUser(?User $user): self
-    {
-        $this->user = $user;
-
-        return $this;
-    }
 
     public function getFollower(): ?User
     {
@@ -75,21 +39,17 @@ class Follower
     public function setFollower(?User $follower): self
     {
         $this->follower = $follower;
-
         return $this;
     }
 
-    public function getChannel(): ?Chanel
+    public function getFollowing(): ?User
     {
-        return $this->channel;
+        return $this->following;
     }
 
-    public function setChannel(?Chanel $channel): self
+    public function setFollowing(?User $following): self
     {
-        $this->channel = $channel;
-
+        $this->following = $following;
         return $this;
     }
-
-    
 }

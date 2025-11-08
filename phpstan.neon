@@ -1,0 +1,43 @@
+parameters:
+    # Analysis level (0-9, 9 is strictest)
+    level: 6
+
+    # Paths to analyze
+    paths:
+        - src
+        - tests
+
+    # Exclude directories
+    excludePaths:
+        - src/Kernel.php
+        - tests/bootstrap.php
+        - vendor
+        - var
+
+    # Bootstrap file for constants, functions
+    bootstrapFiles:
+        - vendor/autoload.php
+
+    # Symfony-specific configuration
+    symfony:
+        container_xml_path: var/cache/dev/App_KernelDevDebugContainer.xml
+
+    # Error reporting
+    reportUnmatchedIgnoredErrors: false
+    checkMissingIterableValueType: false
+    checkGenericClassInNonGenericObjectType: false
+
+    # Custom rules
+    ignoreErrors:
+        # Ignore Doctrine magic methods
+        - '#Call to an undefined method Doctrine\\ORM\\EntityRepository::#'
+        # Ignore Symfony magic methods
+        - '#Call to an undefined method Symfony\\Component\\HttpFoundation\\Request::#'
+        # Temporary: Ignore missing return types in legacy code
+        - '#Method .* has no return type specified#'
+
+    # Bleeding edge features
+    checkTooWideReturnTypesInProtectedAndPublicMethods: true
+    checkUninitializedProperties: true
+    checkImplicitMixed: false
+    checkBenevolentUnionTypes: true

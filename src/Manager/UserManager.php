@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Manager;
 
 use App\Entity\User;
@@ -10,14 +11,14 @@ use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 class UserManager
 {
     private $entityManager;
-    private $userPasswordHasher;  
+    private $userPasswordHasher;
     private $userRepository;
 
     public function __construct(EntityManagerInterface $entityManager, UserPasswordHasherInterface $userPasswordHasher, UserRepository $userRepository)
     {
         $this->entityManager = $entityManager;
         $this->userRepository = $userRepository;
-        $this->userPasswordHasher = $userPasswordHasher;  
+        $this->userPasswordHasher = $userPasswordHasher;
     }
 
     public function removeUser(User $user): void
@@ -27,14 +28,16 @@ class UserManager
         $this->entityManager->flush();
     }
 
-    public function save($entity): void {
+    public function save($entity): void
+    {
 
-        if($entity instanceof User) {
+        if ($entity instanceof User) {
             $this->entityManager->persist($entity);
         }
     }
 
-    public function flush(): void {
+    public function flush(): void
+    {
         $this->entityManager->flush();
     }
 
