@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 namespace App\Service;
 
@@ -19,5 +19,4 @@ class TokenGenerator
         // Generate a JWT token for the user
         return $this->jwtManager->create($user);
     }
-
 }

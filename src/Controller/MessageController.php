@@ -3,162 +3,190 @@
 namespace App\Controller;
 
 use App\Entity\Message;
-use App\Form\MessageType;
-use App\Manager\MessageManager;
+use App\Entity\Conversation;
+use App\Entity\User;
+use App\Repository\MessageRepository;
+use App\Repository\ConversationRepository;
+use App\Service\MessageService;
 use App\Traits\ApiResponseTrait;
-use App\Traits\FormHandlerTrait;
-use FOS\RestBundle\Controller\AbstractFOSRestController;
+use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Annotation\Route;
-use FOS\RestBundle\Controller\Annotations as Rest;
-use Symfony\Component\Form\FormFactoryInterface;
-use App\Repository\MessageRepository; 
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
+use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
+use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Security\Http\Attribute\CurrentUser;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\Serializer\SerializerInterface;
-use App\Service\Mercure\MercureService;
-use App\Service\Mercure\JwtMercureService;
-use Symfony\Component\Mercure\Update;
-use Symfony\Component\Mercure\HubInterface;
 
-
-/**
- * @Route("/api/messages")
- */
-class MessageController extends AbstractFOSRestController
+#[Route('/api/messages')]
+#[IsGranted('IS_AUTHENTICATED_FULLY')]
+class MessageController extends AbstractController
 {
     use ApiResponseTrait;
-    use FormHandlerTrait;
 
-    private $messageManager;
-    private $formFactory;
-    private $messageRepository;
-    private $serializer;
-    private $hub;
-
-
-    public function __construct(MessageManager $messageManager, FormFactoryInterface $formFactory, MessageRepository $messageRepository, SerializerInterface $serializer, HubInterface $hub)
-    {
-        $this->messageManager = $messageManager;
-        $this->formFactory = $formFactory;
-        $this->messageRepository = $messageRepository;
-        $this->serializer = $serializer;
-        $this->hub = $hub;
+    public function __construct(
+        private readonly MessageRepository $messageRepository,
+        private readonly ConversationRepository $conversationRepository,
+        private readonly MessageService $messageService,
+        private readonly EntityManagerInterface $em,
+        private readonly SerializerInterface $serializer,
+    ) {
     }
 
     /**
-     * @Rest\View(serializerGroups={"message"})
-     * @Route("/", name="message_list", methods={"GET"})
+     * List all messages (paginated)
      */
-    public function listMessages()
+    #[Route('/', name: 'message_list', methods: ['GET'])]
+    public function list(Request $request): JsonResponse
     {
-        $messages = $this->messageRepository->findAll();
-        $serializeMessage =  $this->serializer->normalize($messages, null, ['groups' => ['get_message']]);
-        return $this->createApiResponse($serializeMessage, Response::HTTP_OK);
+        $page = max(1, (int) $request->query->get('page', 1));
+        $limit = min(100, max(1, (int) $request->query->get('limit', 50)));
+
+        $messages = $this->messageRepository->findBy(
+            [],
+            ['createdAt' => 'DESC'],
+            $limit,
+            ($page - 1) * $limit
+        );
+
+        $data = $this->serializer->normalize($messages, null, [
+            'groups' => ['get_message', 'message:read']
+        ]);
+
+        return $this->createApiResponse($data, Response::HTTP_OK);
     }
 
     /**
-     * @Rest\View(serializerGroups={"message"})
-     * @Route("/{id}", name="message_get", methods={"GET"})
+     * Get messages from a specific conversation
      */
-    public function getMessageAction(Message $message)
-    {
-        $serializeMessage =  $this->serializer->normalize($message, null, ['groups' => ['get_message']]);
-        return $this->createApiResponse($serializeMessage, Response::HTTP_OK);
+    #[Route('/conversation/{id}', name: 'message_by_conversation', methods: ['GET'])]
+    public function byConversation(
+        Conversation $conversation,
+        #[CurrentUser] User $user
+    ): JsonResponse {
+        // Security check: verify user is in conversation
+        if (!$this->isUserInConversation($user, $conversation)) {
+            return $this->forbiddenResponse('You are not part of this conversation');
+        }
+
+        $messages = $this->messageRepository->findBy(
+            ['conversation' => $conversation],
+            ['createdAt' => 'ASC', 'id' => 'ASC']
+        );
+
+        $data = $this->serializer->normalize($messages, null, [
+            'groups' => ['get_message', 'message:read']
+        ]);
+
+        return $this->createApiResponse($data, Response::HTTP_OK);
     }
 
     /**
-     * @Rest\View(serializerGroups={"message"})
-     * @Route("/chanel/{id}", name="message_get_chanel", methods={"GET"})
+     * Get a single message
      */
-    public function getMessageByChanelAction(Request $request, int $id)
-    {
-        $messages = $this->messageRepository->findMessagesByChannelId(['id' => $id]);
-        $serializeMessage =  $this->serializer->normalize($messages, null, ['groups' => ['get_message']]);
-        return $this->createApiResponse($serializeMessage, Response::HTTP_OK);
+    #[Route('/{id}', name: 'message_get', methods: ['GET'])]
+    public function getOne(
+        Message $message,
+        #[CurrentUser] User $user
+    ): JsonResponse {
+        $conversation = $message->getConversation();
+
+        if ($conversation && !$this->isUserInConversation($user, $conversation)) {
+            return $this->forbiddenResponse('You cannot access this message');
+        }
+
+        $data = $this->serializer->normalize($message, null, [
+            'groups' => ['get_message', 'message:read']
+        ]);
+
+        return $this->createApiResponse($data, Response::HTTP_OK);
     }
 
     /**
-     * @Rest\View(serializerGroups={"message"})
-     * @Route("/user/{id}", name="message_get_user", methods={"GET"})
+     * Send a new message in a conversation
+     * Delegates to MessageService for validation, authorization, and Mercure publishing
      */
-    public function getMessageByUserAction(Request $request, int $id)
-    {
-        $messages = $this->messageRepository->findMessagesByUserId(['id' => $id]);
-        $serializeMessage =  $this->serializer->normalize($messages, null, ['groups' => ['get_message']]);
-        return $this->createApiResponse($serializeMessage, Response::HTTP_OK);
-    }
+    #[Route('/send', name: 'message_create', methods: ['POST'])]
+    public function send(
+        Request $request,
+        #[CurrentUser] User $user
+    ): JsonResponse {
+        $payload = json_decode($request->getContent(), true) ?? [];
 
+        $conversationId = $payload['conversationId'] ?? null;
+        $content = (string) ($payload['content'] ?? '');
 
-
-    /**
-     * @Route("/send", name="message_create", methods={"POST"})
-     */
-    public function createMessageAction(Request $request, MercureService $mercureService, JwtMercureService $jwtMercureService, HubInterface $hub)
-    {
-        $message = new Message();
-        $form = $this->formFactory->create(MessageType::class, $message);
-        $this->handleForm($request, $form);
-    
-        if ($form->isSubmitted() && $form->isValid()) {
-            $this->messageManager->save($message);
-            $this->messageManager->flush();
-    
-            // Create JWT for Mercure authentication
-            $jwt = $request->headers->get('MercureJWT');
-            // Send a ping to notify about the new message
-            $update = new Update(
-                '/chat_room/'.$message->getChannel()->getId(),               
-                 json_encode([
-                    'username' => $message->getUser()->getUsername(),
-                    'user_id' => $message->getUser()->getId(),
-                    'content' => $message->getUserText(),
-                    'channel' => $message->getChannel(),
-                    'message_value' => $message->getUserText(),
-                    'message_date' => $message->getDate()->format('Y-m-d H:i:s'),
-                ]),
+        // Find conversation
+        if (!$conversationId) {
+            return $this->errorResponse(
+                'conversationId is required',
+                Response::HTTP_BAD_REQUEST
             );
-
-                $data = $hub->publish($update);
-                dd($data);
-               
-            
-                return $this->renderCreatedResponse('Message created successfully');
-           
-        }
-    
-        return $this->createApiResponse($form, Response::HTTP_BAD_REQUEST);
-    }
-    
-
-
-
-    /**
-     * @Rest\View(serializerGroups={"message"})
-     * @Route("/update/{id}", name="message_update", methods={"PUT"})
-     */
-    public function updateMessageAction(Request $request, Message $message)
-    {
-        $form = $this->formFactory->create(MessageType::class, $message); // Use the custom form
-        $this->handleForm($request, $form);
-
-        if ($form->isValid()) {
-            $this->messageManager->save($message);
-            $this->messageManager->flush();
-
-            return $this->renderUpdatedResponse('Message updated successfully');
         }
 
-        return $this->createApiResponse($form, Response::HTTP_BAD_REQUEST);
+        $conversation = $this->conversationRepository->find($conversationId);
+
+        if (!$conversation) {
+            return $this->notFoundResponse('Conversation not found');
+        }
+
+        try {
+            // MessageService handles:
+            // - Content validation
+            // - Authorization check (user in conversation)
+            // - Message creation & persistence
+            // - Mercure publishing
+            $message = $this->messageService->send($user, $conversation, $content);
+
+            return $this->createdResponse([
+                'id' => (string) $message->getId(),
+                'conversationId' => (string) $conversation->getId(),
+                'senderId' => (string) $user->getId(),
+                'senderUsername' => $user->getUserIdentifier(),
+                'content' => $message->getContent(),
+                'createdAt' => $message->getCreatedAt()->format(\DATE_ATOM),
+            ], 'Message sent successfully');
+        } catch (BadRequestHttpException $e) {
+            return $this->errorResponse(
+                $e->getMessage(),
+                Response::HTTP_BAD_REQUEST
+            );
+        } catch (AccessDeniedHttpException $e) {
+            return $this->forbiddenResponse($e->getMessage());
+        }
     }
 
     /**
-     * @Rest\View(serializerGroups={"message"})
-     * @Route("/delete/{id}", name="message_delete", methods={"DELETE"})
+     * Delete a message (only by sender)
      */
-    public function deleteMessageAction(Message $message)
-    {
-        $this->messageManager->removeMessage($message);
+    #[Route('/{id}', name: 'message_delete', methods: ['DELETE'])]
+    public function delete(
+        Message $message,
+        #[CurrentUser] User $user
+    ): JsonResponse {
+        // Security: Only the sender can delete their message
+        if ($message->getSender()?->getId() !== $user->getId()) {
+            return $this->forbiddenResponse('You can only delete your own messages');
+        }
+
+        $this->em->remove($message);
+        $this->em->flush();
 
         return $this->renderDeletedResponse('Message deleted successfully');
+    }
+
+    /**
+     * Helper: Check if user is participant in conversation
+     * Based on your Conversation entity structure (athlete/creator)
+     */
+    private function isUserInConversation(User $user, Conversation $conversation): bool
+    {
+        $athleteId = $conversation->getAthlete()?->getId();
+        $creatorId = $conversation->getCreator()?->getId();
+
+        return $user->getId() === $athleteId || $user->getId() === $creatorId;
     }
 }

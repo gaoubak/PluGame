@@ -44,6 +44,14 @@ class RegistrationFormType extends AbstractType
                         'max' => 4096,
                     ]),
                 ],
+            ])
+             ->add('creatorProfile', CreatorProfileType::class, [
+                'mapped' => false,
+                'required' => false,
+            ])
+            ->add('athleteProfile', AthleteProfileType::class, [
+                'mapped' => false,
+                'required' => false,
             ]);
     }
 

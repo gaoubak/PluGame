@@ -1,0 +1,103 @@
+nelmio_api_doc:
+    documentation:
+        info:
+            title: 23HEC001 Sports Creator Marketplace API
+            description: |
+                API for connecting athletes with content creators for booking photography and videography services.
+
+                ## Features
+                - User authentication (JWT)
+                - Booking management
+                - Payment processing (Stripe)
+                - Real-time messaging (Mercure)
+                - Media storage (R2/S3)
+                - Wallet system
+
+                ## Authentication
+                All endpoints require JWT authentication unless specified otherwise.
+                Include the token in the Authorization header:
+                ```
+                Authorization: Bearer YOUR_JWT_TOKEN
+                ```
+
+                ## Errors
+                The API uses conventional HTTP response codes and returns errors in RFC 7807 format.
+
+            version: 1.0.0
+            contact:
+                name: API Support
+                email: support@23hec001.com
+
+        servers:
+            - url: http://localhost:8000
+              description: Development server
+            - url: https://api.23hec001.com
+              description: Production server
+
+        components:
+            securitySchemes:
+                Bearer:
+                    type: http
+                    scheme: bearer
+                    bearerFormat: JWT
+                    description: 'JWT Authorization header using the Bearer scheme. Example: "Authorization: Bearer {token}"'
+
+            schemas:
+                ProblemDetails:
+                    type: object
+                    description: 'RFC 7807 Problem Details for HTTP APIs'
+                    properties:
+                        type:
+                            type: string
+                            description: 'A URI reference that identifies the problem type'
+                            example: 'https://api.23hec001.com/errors/forbidden'
+                        title:
+                            type: string
+                            description: 'A short, human-readable summary of the problem type'
+                            example: 'Forbidden'
+                        status:
+                            type: integer
+                            description: 'The HTTP status code'
+                            example: 403
+                        detail:
+                            type: string
+                            description: 'A human-readable explanation specific to this occurrence'
+                            example: 'You are not authorized to view this booking'
+                        instance:
+                            type: string
+                            description: 'A URI reference that identifies the specific occurrence of the problem'
+                            example: '/api/bookings/123e4567-e89b-12d3-a456-426614174000'
+
+        security:
+            - Bearer: []
+
+        tags:
+            - name: Authentication
+              description: User registration, login, and token management
+            - name: Users
+              description: User profile management
+            - name: Bookings
+              description: Booking creation and management
+            - name: Payments
+              description: Payment processing and wallet
+            - name: Services
+              description: Service offering management
+            - name: Messages
+              description: Real-time messaging
+            - name: Media
+              description: File upload and deliverables
+            - name: Reviews
+              description: Booking reviews and ratings
+
+    areas:
+        default:
+            path_patterns:
+                - ^/api(?!/doc$)  # All API routes except /api/doc itself
+            host_patterns: []
+
+    models:
+        names:
+            - { alias: UserProfile, type: App\Entity\User, groups: [user:read] }
+            - { alias: BookingDetails, type: App\Entity\Booking, groups: [booking:read] }
+            - { alias: ServiceOffering, type: App\Entity\ServiceOffering, groups: [service:read] }
+            - { alias: PaymentIntent, type: App\Entity\Payment, groups: [payment:read] }

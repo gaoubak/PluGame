@@ -1,0 +1,1504 @@
+{
+	"info": {
+		"_postman_id": "23hec001-complete-api",
+		"name": "23HEC001 Sports Creator Marketplace - Complete API",
+		"description": "Complete API collection for 23HEC001 including authentication, promo codes, bookings, payments, and all features",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "23hec001"
+	},
+	"item": [
+		{
+			"name": "🔐 Authentication",
+			"item": [
+				{
+					"name": "Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    pm.environment.set('access_token', response.token);",
+									"    pm.environment.set('refresh_token', response.refresh_token);",
+									"    pm.environment.set('mercure_token', response.mercure_token);",
+									"    console.log('✅ Tokens saved to environment');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"{{test_email}}\",\n  \"password\": \"{{test_password}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/login_check",
+							"host": ["{{base_url}}"],
+							"path": ["api", "login_check"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Refresh Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    pm.environment.set('access_token', response.token);",
+									"    pm.environment.set('refresh_token', response.refresh_token);",
+									"    console.log('✅ Tokens refreshed');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"refresh_token\": \"{{refresh_token}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/token/refresh",
+							"host": ["{{base_url}}"],
+							"path": ["api", "token", "refresh"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Logout from All Devices",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/token/revoke-all",
+							"host": ["{{base_url}}"],
+							"path": ["api", "token", "revoke-all"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Logout",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/logout",
+							"host": ["{{base_url}}"],
+							"path": ["api", "logout"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "👥 Users & Profiles",
+			"item": [
+				{
+					"name": "Register User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"newuser@example.com\",\n  \"password\": \"SecurePass123!\",\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"username\": \"johndoe\",\n  \"role\": \"ROLE_ATHLETE\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/users/register",
+							"host": ["{{base_url}}"],
+							"path": ["api", "users", "register"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Current User",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/users/current",
+							"host": ["{{base_url}}"],
+							"path": ["api", "users", "current"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Current User",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"firstName\": \"Updated Name\",\n  \"bio\": \"New bio text\",\n  \"location\": \"New York, NY\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/users/update",
+							"host": ["{{base_url}}"],
+							"path": ["api", "users", "update"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get User by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/users/:id",
+							"host": ["{{base_url}}"],
+							"path": ["api", "users", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "{{user_id}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "List Users",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/users/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "users", ""]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Search Users",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/users/search?q=john&role=creator&sport=basketball",
+							"host": ["{{base_url}}"],
+							"path": ["api", "users", "search"],
+							"query": [
+								{
+									"key": "q",
+									"value": "john"
+								},
+								{
+									"key": "role",
+									"value": "creator"
+								},
+								{
+									"key": "sport",
+									"value": "basketball"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "📅 Bookings",
+			"item": [
+				{
+					"name": "List All Bookings",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/bookings/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "bookings", ""]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "My Bookings (as Athlete)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/bookings/mine/as-athlete",
+							"host": ["{{base_url}}"],
+							"path": ["api", "bookings", "mine", "as-athlete"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "My Bookings (as Creator)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/bookings/mine/as-creator",
+							"host": ["{{base_url}}"],
+							"path": ["api", "bookings", "mine", "as-creator"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Booking by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/bookings/:id",
+							"host": ["{{base_url}}"],
+							"path": ["api", "bookings", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "{{booking_id}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Booking (with Promo Code)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    pm.environment.set('booking_id', response.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"creator_user_id\": \"{{creator_id}}\",\n  \"service_offering_id\": \"{{service_id}}\",\n  \"start_time\": \"2025-12-01T10:00:00Z\",\n  \"end_time\": \"2025-12-01T12:00:00Z\",\n  \"location\": \"Central Park, NYC\",\n  \"notes\": \"Need action shots for portfolio\",\n  \"promo_code\": \"SUMMER2025\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/bookings/create",
+							"host": ["{{base_url}}"],
+							"path": ["api", "bookings", "create"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Accept Booking",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/bookings/:id/accept",
+							"host": ["{{base_url}}"],
+							"path": ["api", "bookings", ":id", "accept"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "{{booking_id}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Decline Booking",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"reason\": \"Already booked for that time\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/bookings/:id/decline",
+							"host": ["{{base_url}}"],
+							"path": ["api", "bookings", ":id", "decline"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "{{booking_id}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Cancel Booking",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"reason\": \"Need to reschedule\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/bookings/:id/cancel",
+							"host": ["{{base_url}}"],
+							"path": ["api", "bookings", ":id", "cancel"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "{{booking_id}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Complete Booking",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/bookings/:id/complete",
+							"host": ["{{base_url}}"],
+							"path": ["api", "bookings", ":id", "complete"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "{{booking_id}}"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "🎁 Promo Codes (NEW!)",
+			"item": [
+				{
+					"name": "Create Promo Code (Creator Only)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    pm.environment.set('promo_code_id', response.id);",
+									"    pm.environment.set('promo_code', response.code);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"code\": \"SUMMER2025\",\n  \"discount_type\": \"percentage\",\n  \"discount_value\": 20,\n  \"description\": \"Summer sale discount\",\n  \"max_uses\": 100,\n  \"max_uses_per_user\": 1,\n  \"expires_at\": \"2025-12-31T23:59:59Z\",\n  \"min_amount\": 5000\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/promo-codes/create",
+							"host": ["{{base_url}}"],
+							"path": ["api", "promo-codes", "create"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "List My Promo Codes",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/promo-codes/mine",
+							"host": ["{{base_url}}"],
+							"path": ["api", "promo-codes", "mine"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Validate Promo Code",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"code\": \"SUMMER2025\",\n  \"creator_id\": \"{{creator_id}}\",\n  \"amount\": 10000\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/promo-codes/validate",
+							"host": ["{{base_url}}"],
+							"path": ["api", "promo-codes", "validate"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Deactivate Promo Code",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/promo-codes/:id/deactivate",
+							"host": ["{{base_url}}"],
+							"path": ["api", "promo-codes", ":id", "deactivate"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "{{promo_code_id}}"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "🎯 Services & Availability",
+			"item": [
+				{
+					"name": "List Services",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/services/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "services", ""]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Service by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/services/:id",
+							"host": ["{{base_url}}"],
+							"path": ["api", "services", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "{{service_id}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Service",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    pm.environment.set('service_id', response.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"Professional Sports Photography\",\n  \"description\": \"2-hour photo session with 50+ edited photos\",\n  \"base_price_cents\": 25000,\n  \"duration_minutes\": 120,\n  \"category\": \"photography\",\n  \"is_active\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/services/create",
+							"host": ["{{base_url}}"],
+							"path": ["api", "services", "create"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Service",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"base_price_cents\": 30000\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/services/update/:id",
+							"host": ["{{base_url}}"],
+							"path": ["api", "services", "update", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "{{service_id}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "List Availability Slots",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/slots/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "slots", ""]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "My Slots",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/slots/mine",
+							"host": ["{{base_url}}"],
+							"path": ["api", "slots", "mine"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Bulk Slots",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"start_date\": \"2025-12-01\",\n  \"end_date\": \"2025-12-31\",\n  \"time_slots\": [\n    {\"start\": \"09:00\", \"end\": \"11:00\"},\n    {\"start\": \"14:00\", \"end\": \"16:00\"}\n  ],\n  \"days_of_week\": [1, 2, 3, 4, 5]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/slots/bulk",
+							"host": ["{{base_url}}"],
+							"path": ["api", "slots", "bulk"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "💳 Payments",
+			"item": [
+				{
+					"name": "Create Payment Intent",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    pm.environment.set('payment_intent_id', response.payment_intent_id);",
+									"    pm.environment.set('client_secret', response.client_secret);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"booking_id\": \"{{booking_id}}\",\n  \"amount_cents\": 25000,\n  \"promo_code\": \"SUMMER2025\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/payments/intent",
+							"host": ["{{base_url}}"],
+							"path": ["api", "payments", "intent"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Payment History",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/payments/history?page=1&limit=20",
+							"host": ["{{base_url}}"],
+							"path": ["api", "payments", "history"],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "20"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Payment Status",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/payments/status/:id",
+							"host": ["{{base_url}}"],
+							"path": ["api", "payments", "status", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "{{payment_id}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Wallet Balance",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/wallet/balance",
+							"host": ["{{base_url}}"],
+							"path": ["api", "wallet", "balance"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Wallet Purchase",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"amount_cents\": 10000,\n  \"payment_method_id\": \"pm_xxx\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/wallet/purchase",
+							"host": ["{{base_url}}"],
+							"path": ["api", "wallet", "purchase"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "💬 Messages",
+			"item": [
+				{
+					"name": "My Conversations",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/conversations/me",
+							"host": ["{{base_url}}"],
+							"path": ["api", "conversations", "me"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Conversation",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    pm.environment.set('conversation_id', response.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"participant_id\": \"{{user_id}}\",\n  \"booking_id\": \"{{booking_id}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/conversations/create",
+							"host": ["{{base_url}}"],
+							"path": ["api", "conversations", "create"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Send Message",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"conversation_id\": \"{{conversation_id}}\",\n  \"content\": \"Hello! When would you be available?\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/messages/send",
+							"host": ["{{base_url}}"],
+							"path": ["api", "messages", "send"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Messages by Conversation",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/messages/conversation/:id",
+							"host": ["{{base_url}}"],
+							"path": ["api", "messages", "conversation", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "{{conversation_id}}"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "👍 Social (Feed, Likes, Comments)",
+			"item": [
+				{
+					"name": "Get Feed",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/feed/?page=1&limit=20&type=all",
+							"host": ["{{base_url}}"],
+							"path": ["api", "feed", ""],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "20"
+								},
+								{
+									"key": "type",
+									"value": "all"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Like Post",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/feed/:postId/like",
+							"host": ["{{base_url}}"],
+							"path": ["api", "feed", ":postId", "like"],
+							"variable": [
+								{
+									"key": "postId",
+									"value": "{{post_id}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Unlike Post",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/feed/:postId/like",
+							"host": ["{{base_url}}"],
+							"path": ["api", "feed", ":postId", "like"],
+							"variable": [
+								{
+									"key": "postId",
+									"value": "{{post_id}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Comment",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"content\": \"Great shot!\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/feed/:postId/comments",
+							"host": ["{{base_url}}"],
+							"path": ["api", "feed", ":postId", "comments"],
+							"variable": [
+								{
+									"key": "postId",
+									"value": "{{post_id}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Follow User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/follow/:userId",
+							"host": ["{{base_url}}"],
+							"path": ["api", "follow", ":userId"],
+							"variable": [
+								{
+									"key": "userId",
+									"value": "{{user_id}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Unfollow User",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/follow/:userId",
+							"host": ["{{base_url}}"],
+							"path": ["api", "follow", ":userId"],
+							"variable": [
+								{
+									"key": "userId",
+									"value": "{{user_id}}"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "📸 Media & Deliverables",
+			"item": [
+				{
+					"name": "Upload Media",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"src": []
+								},
+								{
+									"key": "purpose",
+									"value": "deliverable",
+									"type": "text"
+								},
+								{
+									"key": "booking_id",
+									"value": "{{booking_id}}",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/media/upload",
+							"host": ["{{base_url}}"],
+							"path": ["api", "media", "upload"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Upload Deliverable",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"src": []
+								},
+								{
+									"key": "booking_id",
+									"value": "{{booking_id}}",
+									"type": "text"
+								},
+								{
+									"key": "title",
+									"value": "Final edited photos",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/deliverables/upload",
+							"host": ["{{base_url}}"],
+							"path": ["api", "deliverables", "upload"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "List Deliverables",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/deliverables/booking/:id",
+							"host": ["{{base_url}}"],
+							"path": ["api", "deliverables", "booking", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "{{booking_id}}"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "⭐ Reviews",
+			"item": [
+				{
+					"name": "Create Review",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"booking_id\": \"{{booking_id}}\",\n  \"rating\": 5,\n  \"comment\": \"Excellent service! Very professional.\",\n  \"would_recommend\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/reviews/create",
+							"host": ["{{base_url}}"],
+							"path": ["api", "reviews", "create"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "List Reviews",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/reviews/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "reviews", ""]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Creator Reviews",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/profiles/creator/:id/reviews",
+							"host": ["{{base_url}}"],
+							"path": ["api", "profiles", "creator", ":id", "reviews"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "{{creator_id}}"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "📊 Dashboard (Creator)",
+			"item": [
+				{
+					"name": "Dashboard Stats",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/dashboard/stats",
+							"host": ["{{base_url}}"],
+							"path": ["api", "dashboard", "stats"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Analytics",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/dashboard/analytics?start_date=2025-01-01&end_date=2025-12-31",
+							"host": ["{{base_url}}"],
+							"path": ["api", "dashboard", "analytics"],
+							"query": [
+								{
+									"key": "start_date",
+									"value": "2025-01-01"
+								},
+								{
+									"key": "end_date",
+									"value": "2025-12-31"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Recent Bookings",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/dashboard/recent-bookings?limit=10",
+							"host": ["{{base_url}}"],
+							"path": ["api", "dashboard", "recent-bookings"],
+							"query": [
+								{
+									"key": "limit",
+									"value": "10"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8090",
+			"type": "string"
+		}
+	]
+}

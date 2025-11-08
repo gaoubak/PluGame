@@ -17,7 +17,7 @@ class ChanelType extends AbstractType
         $builder
             ->add('users', EntityType::class, [
                 'class' => User::class,
-                'choice_label' => 'email', 
+                'choice_label' => 'email',
                 'multiple' => true,
                 'expanded' => true,
             ])

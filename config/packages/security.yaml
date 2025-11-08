@@ -1,6 +1,5 @@
 security:
     # https://symfony.com/doc/current/security.html#registering-the-user-hashing-passwords
-    enable_authenticator_manager: true
     password_hashers:
         Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface: 'auto'
     # https://symfony.com/doc/current/security.html#loading-the-user-the-user-provider
@@ -46,6 +45,8 @@ security:
     access_control:
         - { path: ^/api/users/register, roles: PUBLIC_ACCESS  }
         - { path: ^/api/login, roles: PUBLIC_ACCESS  }
+        - { path: ^/api/token/refresh, roles: PUBLIC_ACCESS  }  # 🔒 Allow refresh token endpoint
+        - { path: ^/api/doc, roles: PUBLIC_ACCESS  }
         - { path: ^/api,       roles: IS_AUTHENTICATED_FULLY }
 
 when@test:
