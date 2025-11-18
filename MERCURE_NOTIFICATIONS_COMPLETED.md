@@ -196,6 +196,61 @@ const userId = currentUser.id;
 
 ---
 
+### 8. **Availability Changes** (✅ Implemented)
+
+#### `availability.changed`
+- **Topic**: `https://plugame.app/users/{creatorId}/availability`
+- **Triggered**: When creator changes their availability slots
+- **Recipients**: Creator (and potentially followers)
+- **Data**:
+  - Creator ID
+  - Date
+  - Slots available
+  - Changed timestamp
+
+**Implementation**: [MercurePublisher.php:357-377](src/Service/MercurePublisher.php#L357-L377)
+
+---
+
+### 9. **Booking Reminders** (✅ Implemented)
+
+#### `booking.reminder`
+- **Topic**: `https://plugame.app/users/{userId}/bookings`
+- **Triggered**: Automated reminders before booking starts (via cron job)
+- **Recipients**: Both athlete and creator
+- **Data**:
+  - Booking ID, service title
+  - Starts in (e.g., "1 hour")
+  - Start time
+  - Athlete and creator info
+
+**Implementation**: [MercurePublisher.php:382-409](src/Service/MercurePublisher.php#L382-L409)
+
+**Note**: To activate, create a Symfony Console command that runs every 15 minutes and calls this method for upcoming bookings.
+
+---
+
+### 10. **Refund Notifications** (✅ Implemented)
+
+#### `refund.completed`
+- **Topic**: `https://plugame.app/users/{athleteId}/payments`
+- **Triggered**: When Stripe processes a refund
+- **Recipients**: The athlete who receives the refund
+- **Data**:
+  - Booking ID
+  - Amount refunded (in cents)
+  - Currency
+  - Reason
+  - Creator info
+  - Service title
+  - Refund timestamp
+
+**Implementation**:
+- [MercurePublisher.php:414-438](src/Service/MercurePublisher.php#L414-L438)
+- [StripeWebhookController.php:211-220](src/Controller/StripeWebhookController.php#L211-L220)
+
+---
+
 ## ❌ What's Missing (Potential Future Additions)
 
 ### 1. **Service Updates** (Not Implemented)
@@ -216,24 +271,7 @@ const userId = currentUser.id;
 
 ---
 
-### 2. **Availability Changes** (Not Implemented)
-```javascript
-// When creator changes availability slots
-{
-  type: 'availability.changed',
-  data: {
-    creatorId: '456',
-    date: '2025-01-20',
-    slotsAvailable: 3
-  }
-}
-```
-
-**Why useful**: Notify athletes waiting for availability
-
----
-
-### 3. **Profile Updates** (Not Implemented)
+### 2. **Profile Updates** (Not Implemented)
 ```javascript
 // When user updates their profile
 {
@@ -250,7 +288,7 @@ const userId = currentUser.id;
 
 ---
 
-### 4. **Conversation Typing Indicator** (Not Implemented)
+### 3. **Conversation Typing Indicator** (Not Implemented)
 ```javascript
 // When user is typing in conversation
 {
@@ -267,7 +305,7 @@ const userId = currentUser.id;
 
 ---
 
-### 5. **System Announcements** (Not Implemented)
+### 4. **System Announcements** (Not Implemented)
 ```javascript
 // Platform-wide announcements
 {
@@ -284,26 +322,7 @@ const userId = currentUser.id;
 
 ---
 
-### 6. **Booking Reminders** (Not Implemented)
-```javascript
-// Automated reminders before booking start
-{
-  type: 'booking.reminder',
-  data: {
-    bookingId: '123',
-    startsIn: '1 hour',
-    serviceTitle: 'Photo Session'
-  }
-}
-```
-
-**Why useful**: Reduce no-shows with automated reminders
-
-**How to implement**: Create a Symfony Console command that runs every 15 minutes and checks for upcoming bookings
-
----
-
-### 7. **Media Processing Status** (Not Implemented)
+### 5. **Media Processing Status** (Not Implemented)
 ```javascript
 // When uploaded media is being processed
 {
@@ -320,26 +339,7 @@ const userId = currentUser.id;
 
 ---
 
-### 8. **Refund Notifications** (Not Implemented)
-```javascript
-// When refund is processed
-{
-  type: 'refund.completed',
-  data: {
-    bookingId: '123',
-    amountCents: 5000,
-    reason: 'Cancelled by creator'
-  }
-}
-```
-
-**Why useful**: Notify athlete when refund is issued
-
-**Implementation needed**: Add to `StripeWebhookController` handling `charge.refunded` event
-
----
-
-### 9. **Follow/Unfollow Notifications** (Not Implemented)
+### 6. **Follow/Unfollow Notifications** (Not Implemented)
 ```javascript
 // When someone follows a creator
 {
@@ -356,7 +356,7 @@ const userId = currentUser.id;
 
 ---
 
-### 10. **Message Media Upload Progress** (Not Implemented)
+### 7. **Message Media Upload Progress** (Not Implemented)
 ```javascript
 // When uploading large media to conversation
 {
@@ -427,6 +427,7 @@ function useNotifications(userId: string, jwtToken: string) {
       `https://plugame.app/users/${userId}/payments`,
       `https://plugame.app/users/${userId}/deliverables`,
       `https://plugame.app/users/${userId}/payouts`,
+      `https://plugame.app/users/${userId}/availability`,  // NEW: For creators
       `https://plugame.app/users/${userId}/notifications`,
     ];
 
@@ -468,6 +469,22 @@ function useNotifications(userId: string, jwtToken: string) {
         case 'booking.confirmed':
           showInAppNotification('Your booking was confirmed');
           break;
+
+        case 'booking.reminder':
+          showInAppNotification(
+            `Reminder: ${notification.data.serviceTitle} starts in ${notification.data.startsIn}`
+          );
+          break;
+
+        case 'refund.completed':
+          showInAppNotification(
+            `Refund processed: €${notification.data.amountCents / 100}`
+          );
+          break;
+
+        case 'availability.changed':
+          showInAppNotification('Availability updated');
+          break;
       }
 
       setNotifications(prev => [notification, ...prev]);
@@ -494,22 +511,28 @@ All core notifications for the Plugame platform are now implemented:
 - ✅ Bookings (5+ types)
 - ✅ Payments (2 types)
 - ✅ Reviews (1 type)
-- ✅ Deliverables (3 types) - **COMPLETED TODAY**
-- ✅ Payouts (1 type) - **COMPLETED TODAY**
+- ✅ Deliverables (3 types)
+- ✅ Payouts (1 type)
+- ✅ Availability changes (1 type) - **NEW**
+- ✅ Booking reminders (1 type) - **NEW**
+- ✅ Refund notifications (1 type) - **NEW**
 - ✅ Generic notifications (1 type)
 
-**Total**: 15 notification types across 7 categories
+**Total**: 18 notification types across 10 categories
 
 ---
 
-## 📂 Files Modified Today
+## 📂 Files Modified
 
 ### 1. `src/Service/MercurePublisher.php`
-**Lines Added**: 252-352 (4 new methods)
-- `publishDeliverableUploaded()`
-- `publishDeliverableDownloadRequested()`
-- `publishDeliverableDownloaded()`
-- `publishPayoutCompleted()`
+**Methods Added**:
+- `publishDeliverableUploaded()` - Lines 252-273
+- `publishDeliverableDownloadRequested()` - Lines 278-297
+- `publishDeliverableDownloaded()` - Lines 302-326
+- `publishPayoutCompleted()` - Lines 331-352
+- `publishAvailabilityChanged()` - Lines 357-377 ✨ **NEW**
+- `publishBookingReminder()` - Lines 382-409 ✨ **NEW**
+- `publishRefundCompleted()` - Lines 414-438 ✨ **NEW**
 
 ### 2. `src/Controller/DeliverableController.php`
 **Lines Modified**:
@@ -518,6 +541,12 @@ All core notifications for the Plugame platform are now implemented:
 - Lines 233-238: Notification after download request
 - Lines 268-273: Notification when tracking pixel fires
 - Lines 279-287: Notification when payout completes
+
+### 3. `src/Controller/StripeWebhookController.php` ✨ **NEW**
+**Lines Modified**:
+- Line 10: Added `MercurePublisher` import
+- Line 30: Added `MercurePublisher` to constructor
+- Lines 211-220: Refund notification integration
 
 ---
 
@@ -579,5 +608,17 @@ All notifications are sent via Mercure and can be received in real-time by your 
 
 ---
 
-**Last Updated**: January 18, 2025
+**Last Updated**: November 18, 2025
 **Status**: Production Ready ✅
+
+---
+
+## 📝 Changelog
+
+### November 18, 2025
+- ✅ Added `publishAvailabilityChanged()` - Notify when creator changes availability
+- ✅ Added `publishBookingReminder()` - Send automated booking reminders
+- ✅ Added `publishRefundCompleted()` - Notify athletes of refunds
+- ✅ Integrated refund notifications in StripeWebhookController
+- ✅ Updated frontend examples with new notification types
+- **Total notifications increased from 15 to 18 types**
