@@ -8,8 +8,6 @@ use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
-use Symfony\Component\Mercure\HubInterface;
-use Symfony\Component\Mercure\Update;
 use Symfony\Component\Validator\Constraints as Assert;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
@@ -17,8 +15,8 @@ final class MessageService
 {
     public function __construct(
         private readonly EntityManagerInterface $em,
-        private readonly HubInterface $hub,
         private readonly ValidatorInterface $validator,
+        private readonly MercurePublisher $mercurePublisher,
     ) {
     }
 
@@ -90,27 +88,8 @@ final class MessageService
      */
     private function publishUpdate(Conversation $conversation, Message $message, User $sender): void
     {
-
-        $backendOrigin = $_ENV['BACKEND_PUBLIC_ORIGIN'] ?? 'http://localhost:8090';
-        $topic = rtrim($backendOrigin, '/') . '/conversations/' . $conversation->getId();
-        // Prepare the event payload
-        $event = [
-            'conversationId' => (string) $conversation->getId(),
-            'messageId'      => (string) $message->getId(),
-            'sender'         => [
-                'id'         => (string) $sender->getId(),
-                'identifier' => $sender->getUserIdentifier(),
-            ],
-            'content'   => $message->getContent(),
-            'createdAt' => $message->getCreatedAt()->format(\DATE_ATOM),
-        ];
-
-        // Publish to Mercure hub
-        $update = new Update(
-            $topic,
-            json_encode($event, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE)
-        );
-
-        $this->hub->publish($update);
+        // Use MercurePublisher for consistent topic format and payload structure
+        // Parameters kept for backward compatibility but not used
+        $this->mercurePublisher->publishMessageCreated($message);
     }
 }

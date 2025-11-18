@@ -11,6 +11,7 @@ use App\Repository\PaymentRepository;
 use App\Repository\BookingRepository;
 use App\Service\Stripe\StripeService;
 use App\Service\WalletService;
+use App\Service\MercurePublisher;
 use App\Traits\ApiResponseTrait;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -35,6 +36,7 @@ class PaymentController extends AbstractController
         private readonly StripeService $stripeService,
         private readonly WalletService $walletService,
         private readonly EntityManagerInterface $em,
+        private readonly MercurePublisher $mercurePublisher,
     ) {
     }
 
@@ -431,6 +433,13 @@ class PaymentController extends AbstractController
             }
 
             $this->em->flush();
+
+            // Publish Mercure notification
+            try {
+                $this->mercurePublisher->publishPaymentCompleted($payment);
+            } catch (\Exception $e) {
+                error_log('Mercure publish failed: ' . $e->getMessage());
+            }
         }
     }
 
@@ -443,6 +452,13 @@ class PaymentController extends AbstractController
         if ($payment) {
             $payment->setStatus(Payment::STATUS_FAILED);
             $this->em->flush();
+
+            // Publish Mercure notification
+            try {
+                $this->mercurePublisher->publishPaymentFailed($payment);
+            } catch (\Exception $e) {
+                error_log('Mercure publish failed: ' . $e->getMessage());
+            }
         }
     }
 }

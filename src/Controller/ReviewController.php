@@ -7,6 +7,7 @@ use App\Entity\Booking;
 use App\Entity\User;
 use App\Form\ReviewType;
 use App\Repository\ReviewRepository;
+use App\Service\MercurePublisher;
 use App\Traits\ApiResponseTrait;
 use App\Traits\FormHandlerTrait;
 use Doctrine\ORM\EntityManagerInterface;
@@ -30,7 +31,8 @@ class ReviewController extends AbstractFOSRestController
         private readonly FormFactoryInterface $formFactory,
         private readonly EntityManagerInterface $em,
         private readonly SerializerInterface $serializer,
-        private readonly Security $security
+        private readonly Security $security,
+        private readonly MercurePublisher $mercurePublisher,
     ) {
     }
 
@@ -85,6 +87,13 @@ class ReviewController extends AbstractFOSRestController
 
         $this->em->persist($review);
         $this->em->flush();
+
+        // Publish Mercure notification
+        try {
+            $this->mercurePublisher->publishReviewCreated($review);
+        } catch (\Exception $e) {
+            error_log('Mercure publish failed: ' . $e->getMessage());
+        }
 
         $data = $this->serializer->normalize($review, null, ['groups' => ['review:write']]);
         return $this->createApiResponse($data, Response::HTTP_CREATED);

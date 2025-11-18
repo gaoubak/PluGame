@@ -10,6 +10,7 @@ use App\Entity\User;
 use App\Repository\BookingRepository;
 use App\Service\R2Storage;
 use App\Service\EmailService;
+use App\Service\MercurePublisher;
 use App\Service\StripePayoutService;
 use App\Traits\ApiResponseTrait;
 use Doctrine\ORM\EntityManagerInterface;
@@ -32,6 +33,7 @@ class DeliverableController extends AbstractController
         private readonly BookingRepository $bookingRepository,
         private readonly R2Storage $r2,
         private readonly EmailService $emailService,
+        private readonly MercurePublisher $mercurePublisher,
         private readonly StripePayoutService $stripePayoutService,
         private readonly EntityManagerInterface $em,
     ) {
@@ -93,6 +95,14 @@ class DeliverableController extends AbstractController
 
         $this->em->persist($asset);
         $this->em->flush();
+
+        // ✅ Publish Mercure notification to athlete
+        try {
+            $totalFiles = $booking->getDeliverables()->count();
+            $this->mercurePublisher->publishDeliverableUploaded($booking, $totalFiles);
+        } catch (\Exception $e) {
+            error_log('Mercure publish failed: ' . $e->getMessage());
+        }
 
         return $this->createdResponse([
             'id' => $asset->getId(),
@@ -171,6 +181,14 @@ class DeliverableController extends AbstractController
             return $this->forbiddenResponse('Only the athlete can request downloads');
         }
 
+        // ✅ CRITICAL: Check if remaining payment has been made
+        if (!$booking->isDeliverablesUnlocked()) {
+            return $this->errorResponse(
+                'You must pay the remaining amount before downloading deliverables',
+                Response::HTTP_PAYMENT_REQUIRED // 402
+            );
+        }
+
         // Check if deliverables exist
         $deliverables = $booking->getDeliverables();
         if ($deliverables->count() === 0) {
@@ -212,6 +230,13 @@ class DeliverableController extends AbstractController
             $trackingToken
         );
 
+        // ✅ Publish Mercure notification to creator
+        try {
+            $this->mercurePublisher->publishDeliverableDownloadRequested($booking);
+        } catch (\Exception $e) {
+            error_log('Mercure publish failed: ' . $e->getMessage());
+        }
+
         // Clean up local ZIP
         @unlink($zipPath);
 
@@ -240,9 +265,26 @@ class DeliverableController extends AbstractController
             $booking->setDeliverableDownloadedAt(new \DateTimeImmutable());
             $this->em->flush();
 
+            // ✅ Publish Mercure notification to both parties
+            try {
+                $this->mercurePublisher->publishDeliverableDownloaded($booking);
+            } catch (\Exception $e) {
+                error_log('Mercure publish failed: ' . $e->getMessage());
+            }
+
             // Trigger Stripe payout
             try {
                 $this->stripePayoutService->processBookingPayout($booking);
+
+                // ✅ Publish payout notification to creator
+                try {
+                    $this->mercurePublisher->publishPayoutCompleted(
+                        $booking,
+                        $booking->getCreatorAmountCents()
+                    );
+                } catch (\Exception $e) {
+                    error_log('Mercure publish failed: ' . $e->getMessage());
+                }
             } catch (\Exception $e) {
                 error_log('Payout failed: ' . $e->getMessage());
             }

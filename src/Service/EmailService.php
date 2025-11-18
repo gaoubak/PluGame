@@ -41,20 +41,30 @@ class EmailService
             UrlGeneratorInterface::ABSOLUTE_URL
         );
 
+        // Calculate payment details
+        $remainingAmount = $booking->getRemainingAmountCents() ?? 0;
+        $platformFee = (int) ($remainingAmount * 0.15); // 15% platform fee
+        $totalToPay = $remainingAmount + $platformFee;
+        $currency = $booking->getCurrency() ?? 'eur';
+
         // Render email template
         $htmlContent = $this->twig->render('emails/deliverable.html.twig', [
             'creatorName' => $creatorName,
             'serviceTitle' => $booking->getService()->getTitle(),
             'downloadUrl' => $downloadUrl,
             'trackingUrl' => $trackingUrl,
-            'expiresIn' => '7 days',
+            'expiresIn' => '7 jours',
             'bookingId' => $booking->getId(),
+            'remainingAmount' => $remainingAmount,
+            'platformFee' => $platformFee,
+            'totalToPay' => $totalToPay,
+            'currency' => $currency,
         ]);
 
         $email = (new Email())
             ->from($this->senderEmail)
             ->to($recipientEmail)
-            ->subject("Your files from {$creatorName} are ready!")
+            ->subject("Vos fichiers de {$creatorName} sont prêts !")
             ->html($htmlContent);
 
         $this->mailer->send($email);

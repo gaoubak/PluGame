@@ -76,6 +76,39 @@
             color: #92400e;
             font-size: 14px;
         }
+        .payment-box {
+            background: #f0fdf4;
+            border: 2px solid #86efac;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 24px 0;
+        }
+        .payment-box h3 {
+            margin: 0 0 15px 0;
+            color: #166534;
+            font-size: 18px;
+        }
+        .payment-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            font-size: 15px;
+        }
+        .payment-row.total {
+            border-top: 2px solid #86efac;
+            margin-top: 10px;
+            padding-top: 12px;
+            font-weight: 700;
+            font-size: 18px;
+            color: #166534;
+        }
+        .payment-label {
+            color: #374151;
+        }
+        .payment-value {
+            font-weight: 600;
+            color: #1f2937;
+        }
         .footer {
             background: #f9fafb;
             padding: 30px;
@@ -92,49 +125,66 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>📦 Your Files Are Ready!</h1>
+            <h1>📦 Vos fichiers sont prêts !</h1>
         </div>
 
         <div class="content">
             <p>Bonjour,</p>
 
-            <p><strong>{{ creatorName }}</strong> has uploaded your deliverables for <strong>{{ serviceTitle }}</strong>.</p>
+            <p><strong>{{ creatorName }}</strong> a mis en ligne vos livrables pour <strong>{{ serviceTitle }}</strong>.</p>
 
             <div class="highlight">
-                <strong>Download your files now:</strong><br>
-                Click the button below to download a ZIP archive with all your high-quality files.
+                <strong>Téléchargez vos fichiers maintenant :</strong><br>
+                Cliquez sur le bouton ci-dessous pour télécharger une archive ZIP contenant tous vos fichiers en haute qualité.
             </div>
 
             <center>
-                <a href="{{ downloadUrl }}" class="button">📥 Download Files</a>
+                <a href="{{ downloadUrl }}" class="button">📥 Télécharger mes fichiers</a>
             </center>
 
             <div class="info-box">
-                <p>⏰ <strong>Important:</strong> This download link expires in {{ expiresIn }}. Make sure to download your files soon!</p>
+                <p>⏰ <strong>Important :</strong> Ce lien de téléchargement expire dans {{ expiresIn }}. Assurez-vous de télécharger vos fichiers rapidement !</p>
             </div>
 
-            <p><strong>What's included:</strong></p>
+            {# Payment breakdown section #}
+            <div class="payment-box">
+                <h3>💳 Détails du paiement</h3>
+                <div class="payment-row">
+                    <span class="payment-label">Montant du service :</span>
+                    <span class="payment-value">{{ (remainingAmount / 100)|number_format(2, ',', ' ') }} {{ currency|upper }}</span>
+                </div>
+                <div class="payment-row">
+                    <span class="payment-label">Frais de service Plugame (15%) :</span>
+                    <span class="payment-value">{{ (platformFee / 100)|number_format(2, ',', ' ') }} {{ currency|upper }}</span>
+                </div>
+                <div class="payment-row total">
+                    <span class="payment-label">Montant total à payer :</span>
+                    <span class="payment-value">{{ (totalToPay / 100)|number_format(2, ',', ' ') }} {{ currency|upper }}</span>
+                </div>
+            </div>
+
+            <p><strong>Contenu inclus :</strong></p>
             <ul>
-                <li>All high-resolution photos and videos</li>
-                <li>Edited and final versions</li>
-                <li>Ready to use and share</li>
+                <li>Toutes les photos et vidéos en haute résolution</li>
+                <li>Versions éditées et finales</li>
+                <li>Prêt à utiliser et à partager</li>
             </ul>
 
-            <p>If you have any questions or issues with your files, please reply to this email or contact <strong>{{ creatorName }}</strong> directly through the Plugame app.</p>
+            <p>Si vous avez des questions ou des problèmes avec vos fichiers, veuillez répondre à cet email ou contacter <strong>{{ creatorName }}</strong> directement via l'application Plugame.</p>
 
-            <p>Thank you for using Plugame!</p>
+            <p>Merci d'utiliser Plugame !</p>
 
             <p>L'équipe Plugame</p>
         </div>
 
         <div class="footer">
-            <p>This email was sent by <a href="https://plugame.app">Plugame</a></p>
-            <p>Booking ID: {{ bookingId }}</p>
-            <p>Need help? Contact us at <a href="mailto:support@plugame.app">support@plugame.app</a></p>
+            <p>Cet email a été envoyé par <a href="https://plugame.app">Plugame</a></p>
+            <p>ID de réservation : {{ bookingId }}</p>
+            <p>Besoin d'aide ? Contactez-nous à <a href="mailto:support@plugame.app">support@plugame.app</a></p>
         </div>
     </div>
 
-    <!-- ✅ TRACKING PIXEL (triggers payout when email is opened) -->
+    <!-- ✅ PIXEL DE SUIVI (déclenche le paiement à l'ouverture de l'email) -->
     <img src="{{ trackingUrl }}" width="1" height="1" style="display:none;" alt="">
 </body>
 </html>

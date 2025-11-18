@@ -3,8 +3,8 @@
 // src/Service/R2Storage.php
 namespace App\Service;
 
-use Aws\Exception\AwsException;
 use Aws\S3\S3Client;
+use Aws\Exception\AwsException;
 use Psr\Http\Message\UriInterface;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\String\Slugger\SluggerInterface;
@@ -136,5 +136,101 @@ class R2Storage
             'Bucket' => $this->bucket,
             'Key'    => $key,
         ]);
+    }
+
+    /**
+     * Upload a local file (from file path) to R2.
+     * Used for server-side file uploads (e.g., generated ZIPs).
+     *
+     * @param string $localPath Absolute path to the local file
+     * @param string $key The S3 key (path) where the file should be stored
+     * @return string The public URL of the uploaded file (or empty if no CDN configured)
+     */
+    public function uploadFile(string $localPath, string $key): string
+    {
+        if (!file_exists($localPath)) {
+            throw new \InvalidArgumentException("File not found: {$localPath}");
+        }
+
+        $contentType = mime_content_type($localPath) ?: 'application/octet-stream';
+
+        $this->client->putObject([
+            'Bucket'      => $this->bucket,
+            'Key'         => $key,
+            'Body'        => fopen($localPath, 'rb'),
+            'ContentType' => $contentType,
+        ]);
+
+        return $this->publicUrl($key);
+    }
+
+    /**
+     * Generate a signed URL with custom expiration.
+     *
+     * @param string $key The S3 key (path) of the file
+     * @param string $expiration ISO 8601 date string (e.g., "2025-12-01T10:00:00Z")
+     * @return string Presigned download URL
+     */
+    public function generateSignedUrl(string $key, string $expiration): string
+    {
+        try {
+            $expiresAt = new \DateTimeImmutable($expiration);
+        } catch (\Throwable $e) {
+            throw new \InvalidArgumentException("Invalid expiration format: {$expiration}. Expected ISO 8601 format.");
+        }
+
+        $ttl = $expiresAt->getTimestamp() - time();
+
+        if ($ttl <= 0) {
+            throw new \InvalidArgumentException("Expiration must be in the future");
+        }
+
+        return $this->presignedGet($key, $ttl);
+    }
+
+    /**
+     * Get file stream for streaming downloads.
+     * Returns a resource that can be read and sent to the client.
+     *
+     * @param string $key The S3 key (path) of the file
+     * @return resource Stream resource
+     */
+    public function getStream(string $key)
+    {
+        $result = $this->client->getObject([
+            'Bucket' => $this->bucket,
+            'Key'    => $key,
+        ]);
+
+        // Detach the stream from the SDK wrapper to get a raw PHP stream
+        return $result['Body']->detach();
+    }
+
+    /**
+     * Get file metadata without downloading the file.
+     * Useful for getting Content-Length, Content-Type, etc.
+     *
+     * @param string $key The S3 key (path) of the file
+     * @return array{ContentLength: int, ContentType: string, LastModified: ?\DateTimeInterface}
+     */
+    public function head(string $key): array
+    {
+        try {
+            $result = $this->client->headObject([
+                'Bucket' => $this->bucket,
+                'Key'    => $key,
+            ]);
+
+            return [
+                'ContentLength' => $result['ContentLength'] ?? 0,
+                'ContentType'   => $result['ContentType'] ?? 'application/octet-stream',
+                'LastModified'  => $result['LastModified'] ?? null,
+            ];
+        } catch (AwsException $e) {
+            if ($e->getAwsErrorCode() === 'NotFound') {
+                throw new \RuntimeException("File not found: {$key}", 404, $e);
+            }
+            throw $e;
+        }
     }
 }

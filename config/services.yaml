@@ -56,6 +56,11 @@ services:
         $em: '@doctrine.orm.entity_manager'
         $stripeSecretKey: '%stripe_secret_key%'
 
+  App\Controller\StripeWebhookController:
+    arguments:
+        $stripeSecretKey: '%stripe_secret_key%'
+        $stripeWebhookSecret: '%stripe_webhook_secret%'
+
   # If you have an R2Storage service, inject the (possibly-empty) base url:
   App\Service\R2Storage:
     arguments:

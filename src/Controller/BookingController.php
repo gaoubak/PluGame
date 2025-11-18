@@ -10,6 +10,7 @@ use App\Repository\AvailabilitySlotRepository;
 use App\Repository\BookingRepository;
 use App\Repository\ServiceOfferingRepository;
 use App\Service\PricingService;
+use App\Service\MercurePublisher;
 use App\Traits\ApiResponseTrait;
 use App\Traits\FormHandlerTrait;
 use Doctrine\ORM\EntityManagerInterface;
@@ -38,6 +39,7 @@ class BookingController extends AbstractFOSRestController
         private readonly ServiceOfferingRepository $services,
         private readonly PricingService $pricing,
         private readonly UserRepository $userRepository,
+        private readonly MercurePublisher $mercurePublisher,
     ) {
     }
 
@@ -311,6 +313,13 @@ class BookingController extends AbstractFOSRestController
         $this->em->persist($booking);
         $this->em->flush();
 
+        // Publish Mercure notification
+        try {
+            $this->mercurePublisher->publishBookingCreated($booking);
+        } catch (\Exception $e) {
+            error_log('Mercure publish failed: ' . $e->getMessage());
+        }
+
         $data = [
             'id'        => (string) $booking->getId(),
             'startTime' => $booking->getStartTime()->format(\DATE_ATOM),
@@ -390,6 +399,13 @@ class BookingController extends AbstractFOSRestController
         $booking->setStatus(Booking::STATUS_ACCEPTED);
         $this->em->flush();
 
+        // Publish Mercure notification
+        try {
+            $this->mercurePublisher->publishBookingStatusChanged($booking);
+        } catch (\Exception $e) {
+            error_log('Mercure publish failed: ' . $e->getMessage());
+        }
+
         return $this->createApiResponse(['status' => $booking->getStatus()], Response::HTTP_OK);
     }
 
@@ -416,6 +432,14 @@ class BookingController extends AbstractFOSRestController
         }
 
         $this->em->flush();
+
+        // Publish Mercure notification
+        try {
+            $this->mercurePublisher->publishBookingStatusChanged($booking);
+        } catch (\Exception $e) {
+            error_log('Mercure publish failed: ' . $e->getMessage());
+        }
+
         return $this->createApiResponse(['status' => $booking->getStatus()], Response::HTTP_OK);
     }
 
@@ -453,6 +477,14 @@ class BookingController extends AbstractFOSRestController
         }
 
         $this->em->flush();
+
+        // Publish Mercure notification
+        try {
+            $this->mercurePublisher->publishBookingStatusChanged($booking);
+        } catch (\Exception $e) {
+            error_log('Mercure publish failed: ' . $e->getMessage());
+        }
+
         return $this->createApiResponse(['status' => $booking->getStatus()], Response::HTTP_OK);
     }
 
@@ -500,6 +532,14 @@ class BookingController extends AbstractFOSRestController
         $booking->setCompletedAt($completedAt);
 
         $this->em->flush();
+
+        // Publish Mercure notification
+        try {
+            $this->mercurePublisher->publishBookingStatusChanged($booking);
+        } catch (\Exception $e) {
+            error_log('Mercure publish failed: ' . $e->getMessage());
+        }
+
         return $this->createApiResponse([
             'status' => $booking->getStatus(),
             'completedAt' => $booking->getCompletedAt()?->format(\DATE_ATOM),

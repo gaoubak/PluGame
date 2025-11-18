@@ -1,0 +1,57 @@
+{
+  "api": {
+    "baseUrl": "https://VOTRE_URL.ngrok-free.app",
+    "endpoints": {
+      "auth": {
+        "login": "/api/auth/login",
+        "register": "/api/auth/register",
+        "refreshToken": "/api/auth/refresh"
+      },
+      "bookings": {
+        "list": "/api/bookings",
+        "create": "/api/bookings",
+        "detail": "/api/bookings/{id}",
+        "accept": "/api/bookings/{id}/accept",
+        "decline": "/api/bookings/{id}/decline",
+        "cancel": "/api/bookings/{id}/cancel"
+      },
+      "deliverables": {
+        "upload": "/api/deliverables/upload",
+        "list": "/api/deliverables/booking/{id}",
+        "requestDownload": "/api/deliverables/request-download/{id}",
+        "delete": "/api/deliverables/{id}"
+      },
+      "payments": {
+        "createPaymentIntent": "/api/payments/create-payment-intent",
+        "confirmPayment": "/api/payments/confirm",
+        "paymentMethods": "/api/payments/methods"
+      },
+      "profile": {
+        "me": "/api/users/me",
+        "update": "/api/users/me",
+        "uploadAvatar": "/api/media/avatar"
+      }
+    }
+  },
+  "mercure": {
+    "hubUrl": "https://VOTRE_URL.ngrok-free.app/.well-known/mercure",
+    "topics": {
+      "bookingStatusChanged": "/bookings/{id}/status",
+      "newMessage": "/conversations/{id}/messages",
+      "deliverableUploaded": "/bookings/{id}/deliverables",
+      "paymentReceived": "/bookings/{id}/payment"
+    }
+  },
+  "cors": {
+    "enabled": true,
+    "allowedOrigins": [
+      "http://localhost:3000",
+      "http://localhost:19006",
+      "exp://192.168.1.X:19000"
+    ]
+  },
+  "notes": {
+    "ngrokUrl": "⚠️ Cette URL change à chaque redémarrage de ngrok !",
+    "howToUpdate": "1. Démarrez ngrok: ./scripts/start-ngrok.sh\n2. Copiez la nouvelle URL HTTPS\n3. Remplacez VOTRE_URL.ngrok-free.app partout\n4. Mettez à jour .env.local backend\n5. Redémarrez: docker compose restart alpine"
+  }
+}

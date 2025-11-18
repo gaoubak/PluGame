@@ -615,6 +615,51 @@ class Booking
         return 'Cancellation available';
     }
 
+    // ✅ NEW: Deliverable download tracking
+    #[ORM\Column(type: 'datetime_immutable', nullable: true)]
+    #[Groups(['booking:read'])]
+    private ?\DateTimeImmutable $deliverableDownloadRequestedAt = null;
+
+    #[ORM\Column(type: 'datetime_immutable', nullable: true)]
+    #[Groups(['booking:read'])]
+    private ?\DateTimeImmutable $deliverableDownloadedAt = null;
+
+    #[ORM\Column(type: 'string', length: 64, nullable: true)]
+    private ?string $deliverableTrackingToken = null;
+
+    public function getDeliverableDownloadRequestedAt(): ?\DateTimeImmutable
+    {
+        return $this->deliverableDownloadRequestedAt;
+    }
+
+    public function setDeliverableDownloadRequestedAt(?\DateTimeImmutable $deliverableDownloadRequestedAt): self
+    {
+        $this->deliverableDownloadRequestedAt = $deliverableDownloadRequestedAt;
+        return $this;
+    }
+
+    public function getDeliverableDownloadedAt(): ?\DateTimeImmutable
+    {
+        return $this->deliverableDownloadedAt;
+    }
+
+    public function setDeliverableDownloadedAt(?\DateTimeImmutable $deliverableDownloadedAt): self
+    {
+        $this->deliverableDownloadedAt = $deliverableDownloadedAt;
+        return $this;
+    }
+
+    public function getDeliverableTrackingToken(): ?string
+    {
+        return $this->deliverableTrackingToken;
+    }
+
+    public function setDeliverableTrackingToken(?string $deliverableTrackingToken): self
+    {
+        $this->deliverableTrackingToken = $deliverableTrackingToken;
+        return $this;
+    }
+
     #[Groups(['booking:read'])]
     public function isDeliverablesUnlocked(): bool
     {

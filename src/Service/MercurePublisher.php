@@ -247,6 +247,197 @@ class MercurePublisher
     }
 
     /**
+     * Publish deliverable uploaded event
+     */
+    public function publishDeliverableUploaded(Booking $booking, int $filesCount): void
+    {
+        // Notify the athlete that files are ready
+        $update = new Update(
+            "https://plugame.app/users/{$booking->getAthlete()->getId()}/deliverables",
+            json_encode([
+                'type' => 'deliverable.uploaded',
+                'data' => [
+                    'bookingId' => $booking->getId(),
+                    'creatorId' => $booking->getCreator()->getId(),
+                    'creatorName' => $booking->getCreator()->getCreatorProfile()?->getDisplayName() ?? $booking->getCreator()->getUsername(),
+                    'serviceTitle' => $booking->getService()->getTitle(),
+                    'filesCount' => $filesCount,
+                    'canDownload' => $booking->isDeliverablesUnlocked(),
+                    'uploadedAt' => (new \DateTime())->format('c'),
+                ],
+                'timestamp' => (new \DateTime())->format('c'),
+            ])
+        );
+
+        $this->hub->publish($update);
+    }
+
+    /**
+     * Publish deliverable download requested event
+     */
+    public function publishDeliverableDownloadRequested(Booking $booking): void
+    {
+        // Notify the creator that athlete requested download
+        $update = new Update(
+            "https://plugame.app/users/{$booking->getCreator()->getId()}/deliverables",
+            json_encode([
+                'type' => 'deliverable.download_requested',
+                'data' => [
+                    'bookingId' => $booking->getId(),
+                    'athleteId' => $booking->getAthlete()->getId(),
+                    'athleteName' => $booking->getAthlete()->getAthleteProfile()?->getDisplayName() ?? $booking->getAthlete()->getUsername(),
+                    'serviceTitle' => $booking->getService()->getTitle(),
+                    'requestedAt' => $booking->getDeliverableDownloadRequestedAt()?->format('c'),
+                ],
+                'timestamp' => (new \DateTime())->format('c'),
+            ])
+        );
+
+        $this->hub->publish($update);
+    }
+
+    /**
+     * Publish deliverable downloaded event (tracking pixel fired)
+     */
+    public function publishDeliverableDownloaded(Booking $booking): void
+    {
+        // Notify both parties that download was confirmed
+        $topics = [
+            "https://plugame.app/users/{$booking->getAthlete()->getId()}/deliverables",
+            "https://plugame.app/users/{$booking->getCreator()->getId()}/deliverables",
+        ];
+
+        $data = [
+            'type' => 'deliverable.downloaded',
+            'data' => [
+                'bookingId' => $booking->getId(),
+                'athleteId' => $booking->getAthlete()->getId(),
+                'creatorId' => $booking->getCreator()->getId(),
+                'downloadedAt' => $booking->getDeliverableDownloadedAt()?->format('c'),
+                'payoutTriggered' => true,
+            ],
+            'timestamp' => (new \DateTime())->format('c'),
+        ];
+
+        foreach ($topics as $topic) {
+            $update = new Update($topic, json_encode($data));
+            $this->hub->publish($update);
+        }
+    }
+
+    /**
+     * Publish payout completed event
+     */
+    public function publishPayoutCompleted(Booking $booking, int $amountCents): void
+    {
+        // Notify the creator that payout was completed
+        $update = new Update(
+            "https://plugame.app/users/{$booking->getCreator()->getId()}/payouts",
+            json_encode([
+                'type' => 'payout.completed',
+                'data' => [
+                    'bookingId' => $booking->getId(),
+                    'athleteId' => $booking->getAthlete()->getId(),
+                    'athleteName' => $booking->getAthlete()->getAthleteProfile()?->getDisplayName() ?? $booking->getAthlete()->getUsername(),
+                    'serviceTitle' => $booking->getService()->getTitle(),
+                    'amountCents' => $amountCents,
+                    'currency' => $booking->getCurrency() ?? 'EUR',
+                    'completedAt' => $booking->getPayoutCompletedAt()?->format('c'),
+                ],
+                'timestamp' => (new \DateTime())->format('c'),
+            ])
+        );
+
+        $this->hub->publish($update);
+    }
+
+    /**
+     * Publish availability changed event
+     */
+    public function publishAvailabilityChanged(
+        int $creatorId,
+        string $date,
+        int $slotsAvailable
+    ): void {
+        $update = new Update(
+            "https://plugame.app/users/{$creatorId}/availability",
+            json_encode([
+                'type' => 'availability.changed',
+                'data' => [
+                    'creatorId' => $creatorId,
+                    'date' => $date,
+                    'slotsAvailable' => $slotsAvailable,
+                    'changedAt' => (new \DateTime())->format('c'),
+                ],
+                'timestamp' => (new \DateTime())->format('c'),
+            ])
+        );
+
+        $this->hub->publish($update);
+    }
+
+    /**
+     * Publish booking reminder event
+     */
+    public function publishBookingReminder(Booking $booking, string $startsIn): void
+    {
+        // Notify both athlete and creator
+        $topics = [
+            "https://plugame.app/users/{$booking->getAthlete()->getId()}/bookings",
+            "https://plugame.app/users/{$booking->getCreator()->getId()}/bookings",
+        ];
+
+        $data = [
+            'type' => 'booking.reminder',
+            'data' => [
+                'bookingId' => $booking->getId(),
+                'serviceTitle' => $booking->getService()->getTitle(),
+                'startsIn' => $startsIn,
+                'startTime' => $booking->getStartTime()->format('c'),
+                'athleteId' => $booking->getAthlete()->getId(),
+                'athleteName' => $booking->getAthlete()->getUsername(),
+                'creatorId' => $booking->getCreator()->getId(),
+                'creatorName' => $booking->getCreator()->getUsername(),
+            ],
+            'timestamp' => (new \DateTime())->format('c'),
+        ];
+
+        foreach ($topics as $topic) {
+            $update = new Update($topic, json_encode($data));
+            $this->hub->publish($update);
+        }
+    }
+
+    /**
+     * Publish refund completed event
+     */
+    public function publishRefundCompleted(
+        Booking $booking,
+        int $amountCents,
+        string $reason
+    ): void {
+        $update = new Update(
+            "https://plugame.app/users/{$booking->getAthlete()->getId()}/payments",
+            json_encode([
+                'type' => 'refund.completed',
+                'data' => [
+                    'bookingId' => $booking->getId(),
+                    'amountCents' => $amountCents,
+                    'currency' => $booking->getCurrency() ?? 'EUR',
+                    'reason' => $reason,
+                    'creatorId' => $booking->getCreator()->getId(),
+                    'creatorName' => $booking->getCreator()->getUsername(),
+                    'serviceTitle' => $booking->getService()->getTitle(),
+                    'refundedAt' => (new \DateTime())->format('c'),
+                ],
+                'timestamp' => (new \DateTime())->format('c'),
+            ])
+        );
+
+        $this->hub->publish($update);
+    }
+
+    /**
      * Publish generic notification event
      */
     public function publishNotification(

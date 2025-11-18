@@ -23,6 +23,9 @@ class MediaDownloadToken
     #[ORM\Column(type: 'boolean')]
     private bool $used = false;
 
+    #[ORM\Column(type: 'datetime_immutable', nullable: true)]
+    private ?\DateTimeImmutable $usedAt = null;
+
     public function __construct(MediaAsset $media, \DateTimeImmutable $expiresAt)
     {
         $this->media = $media;
@@ -34,10 +37,19 @@ class MediaDownloadToken
         return $this->media;
     }
 
+    /**
+     * Alias for getMedia() - used in MediaDownloadController
+     */
+    public function getAsset(): MediaAsset
+    {
+        return $this->media;
+    }
+
     public function getExpiresAt(): \DateTimeImmutable
     {
         return $this->expiresAt;
     }
+
     public function setExpiresAt(\DateTimeImmutable $d): self
     {
         $this->expiresAt = $d;
@@ -48,9 +60,23 @@ class MediaDownloadToken
     {
         return $this->used;
     }
+
     public function markUsed(): self
     {
         $this->used = true;
+        $this->usedAt = new \DateTimeImmutable();
+        return $this;
+    }
+
+    public function getUsedAt(): ?\DateTimeImmutable
+    {
+        return $this->usedAt;
+    }
+
+    public function setUsedAt(?\DateTimeImmutable $usedAt): self
+    {
+        $this->usedAt = $usedAt;
+        $this->used = $usedAt !== null;
         return $this;
     }
 
