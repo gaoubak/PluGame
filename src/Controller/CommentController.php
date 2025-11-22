@@ -43,7 +43,6 @@ class CommentController extends AbstractFOSRestController
         if (!$post) {
             return $this->createApiResponse(['message' => 'Post not found'], Response::HTTP_NOT_FOUND);
         }
-
         $page = (int) $request->query->get('page', 1);
         $limit = (int) $request->query->get('limit', 20);
         $sortBy = $request->query->get('sortBy', 'newest');
@@ -121,7 +120,6 @@ class CommentController extends AbstractFOSRestController
         $comment->setPost($post);
         $comment->setUser($user);
         $comment->setContent($content);
-        $comment->setCreatedAt(new \DateTime());
 
         // Increment post comments count
 
@@ -163,7 +161,6 @@ class CommentController extends AbstractFOSRestController
         $reply->setUser($user);
         $reply->setContent($content);
         $reply->setParentComment($parentComment);
-        $reply->setCreatedAt(new \DateTime());
 
         // Increment parent's replies count
         $parentComment->incrementRepliesCount();

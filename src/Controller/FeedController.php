@@ -34,7 +34,7 @@ class FeedController extends AbstractController
      * For now, returns users as posts (mock)
      * TODO: Create Post entity
      */
-    #[Route('/', name: 'get_feed', methods: ['GET'])]
+    #[Route('', name: 'get_feed', methods: ['GET'])]
     public function getFeed(Request $request, #[CurrentUser] ?User $viewer = null): JsonResponse
     {
         // Collect filters from query params
@@ -87,39 +87,7 @@ class FeedController extends AbstractController
             'createdAt' => (new \DateTime())->format('c'),
         ]);
     }
-
-    /**
-     * ✅ NEW: Like a post
-     */
-    #[Route('/{id}/like', name: 'like_post', methods: ['POST'])]
-    #[IsGranted('IS_AUTHENTICATED_FULLY')]
-    public function likePost(
-        string $id,
-        #[CurrentUser] User $user
-    ): JsonResponse {
-
-        return $this->createApiResponse([
-            'message' => 'Post liked',
-            'postId' => $id,
-            'userId' => $user->getId(),
-        ]);
-    }
-
-    /**
-     * ✅ NEW: Unlike a post
-     */
-    #[Route('/{id}/like', name: 'unlike_post', methods: ['DELETE'])]
-    #[IsGranted('IS_AUTHENTICATED_FULLY')]
-    public function unlikePost(
-        string $id,
-        #[CurrentUser] User $user
-    ): JsonResponse {
-        // TODO: Implement Like entity
-        return $this->createApiResponse([
-            'message' => 'Post unliked',
-            'postId' => $id,
-        ]);
-    }
+    
 
     /**
      * ✅ NEW: Comment on a post

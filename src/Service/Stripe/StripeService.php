@@ -55,6 +55,28 @@ final class StripeService
         return $customer->id;
     }
 
+    public function retrieveSetupIntent(string $setupIntentId): ?SetupIntent
+    {
+        try {
+            return $this->stripe->setupIntents->retrieve($setupIntentId);
+        } catch (\Throwable $e ) {
+
+            return null;
+        }
+    }
+
+    public function confirmPaymentIntent(string $paymentIntentId, string $paymentMethodId): \Stripe\PaymentIntent
+    {
+        $confirmation_params = [
+            'payment_method' => $paymentMethodId,
+            'return_url' => 'plugame-mobile://stripe-redirect', 
+        ];
+        return  $this->stripe->paymentIntents->confirm(
+             $paymentIntentId,
+             $confirmation_params
+             );
+    }
+
     public function syncServicePrice(ServiceOffering $service, bool $buyerIsPlugPlus = false): ServiceOffering
     {
         $calc = $this->computeTotals(
@@ -135,7 +157,8 @@ final class StripeService
         int $amountCents,
         string $currency = 'eur',
         ?Booking $booking = null,
-        array $metadata = []
+        array $metadata = [],
+        ?string $paymentMethodId
     ): PaymentIntent {
         $customerId = $this->ensureCustomer($user);
 
@@ -144,15 +167,23 @@ final class StripeService
             $intentMetadata['booking_id'] = $booking->getId();
         }
 
-        return $this->stripe->paymentIntents->create([
+        $params = [
             'amount' => $amountCents,
             'currency' => $currency,
             'customer' => $customerId,
             'metadata' => $intentMetadata,
-            'automatic_payment_methods' => [
-                'enabled' => true,
-            ],
-        ]);
+            'setup_future_usage' => 'on_session',
+        ];
+
+        // Only include payment_method if one is provided
+        if ($paymentMethodId) {
+            $params['payment_method'] = $paymentMethodId;
+        } else {
+            $params['automatic_payment_methods'] = ['enabled' => true];
+        }
+
+        return $this->stripe->paymentIntents->create($params);
+
     }
 
     /**

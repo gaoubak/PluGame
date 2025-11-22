@@ -138,6 +138,17 @@ class R2Storage
         ]);
     }
 
+    public function createMultipartUpload(string $key, string $contentType): string
+    {
+        $result = $this->client->createMultipartUpload([
+            'Bucket' => $this->bucket,
+            'Key' => $key,
+            'ContentType' => $contentType,
+        ]);
+
+        return $result['UploadId'];
+    }
+
     /**
      * Upload a local file (from file path) to R2.
      * Used for server-side file uploads (e.g., generated ZIPs).

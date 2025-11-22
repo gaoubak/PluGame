@@ -24,7 +24,7 @@ class WalletService
      */
     public function getBalance(User $user): int
     {
-        return $this->walletRepository->getBalance($user);
+        return $this->walletRepository->getUserBalance($user);
     }
 
     /**
@@ -107,7 +107,7 @@ class WalletService
      */
     public function getHistory(User $user, int $limit = 50): array
     {
-        return $this->walletRepository->getHistory($user, $limit);
+        return $this->walletRepository->getUserHistory($user, $limit);
     }
 
     /**

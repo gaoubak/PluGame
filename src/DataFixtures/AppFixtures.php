@@ -17,6 +17,10 @@ use App\Entity\Conversation;
 use App\Entity\Message;
 use App\Entity\CreatorProfile;
 use App\Entity\AthleteProfile;
+use App\Entity\PromoCode;
+use App\Entity\GiftCard;
+use App\Entity\Review;
+use App\Entity\OAuthProvider;
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Persistence\ObjectManager;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
@@ -80,65 +84,129 @@ class AppFixtures extends Fixture
 
     public function load(ObjectManager $manager): void
     {
-        echo "🚀 Starting database seeding...\n\n";
+        echo "🚀 Starting Plugame database seeding with REALISTIC FLOW...\n\n";
+        echo "════════════════════════════════════════════════════════════\n\n";
 
-        // 1. Create Users
+        // PHASE 1: Platform Setup
+        echo "📋 PHASE 1: Platform Setup\n";
+        echo "─────────────────────────────────────\n";
+
+        // 1. Create Users (Athletes & Creators)
         echo "👤 Creating users...\n";
         $athletes = $this->createAthletes($manager, 20);
         $creators = $this->createCreators($manager, 15);
         $allUsers = array_merge($athletes, $creators);
         echo "   ✅ Created " . count($athletes) . " athletes\n";
-        echo "   ✅ Created " . count($creators) . " creators\n\n";
+        echo "   ✅ Created " . count($creators) . " creators\n";
 
-        // 2. Create Services
-        echo "💼 Creating services...\n";
+        // Create OAuth test users
+        echo "🔐 Creating OAuth test users...\n";
+        $oauthUsers = $this->createOAuthUsers($manager);
+        $allUsers = array_merge($allUsers, $oauthUsers);
+        echo "   ✅ Created " . count($oauthUsers) . " OAuth users (Google + Apple)\n\n";
+
+        // 2. Creators set up their profiles with feed content
+        echo "📸 Creators populate their feeds...\n";
+        $feedPosts = $this->createCreatorFeedContent($manager, $creators);
+        echo "   ✅ Created " . count($feedPosts) . " feed posts (photos & videos)\n\n";
+
+        // 3. Creators create service offerings
+        echo "💼 Creators create services...\n";
         $services = $this->createServices($manager, $creators);
         echo "   ✅ Created " . count($services) . " services\n\n";
 
-        // 3. Create Availability Slots
-        echo "📅 Creating availability slots...\n";
+        // 4. Creators set availability
+        echo "📅 Creators set availability...\n";
         $this->createAvailabilitySlots($manager, $creators);
-        echo "   ✅ Created availability slots for creators\n\n";
+        echo "   ✅ Created availability slots\n\n";
 
-        // 4. Create Payout Methods
-        echo "💳 Creating payout methods...\n";
+        // 5. Creators add payout methods
+        echo "💳 Creators add payout methods...\n";
         $this->createPayoutMethods($manager, $creators);
-        echo "   ✅ Created payout methods for creators\n\n";
+        echo "   ✅ Created payout methods\n\n";
 
-        // 5. Create Wallet Credits
-        echo "💰 Creating wallet credits...\n";
-        $this->createWalletCredits($manager, $athletes);
-        echo "   ✅ Created wallet credits for athletes\n\n";
+        // 6. Creators create promo codes
+        echo "🎫 Creators create promo codes...\n";
+        $promoCodes = $this->createPromoCodes($manager, $creators);
+        echo "   ✅ Created " . count($promoCodes) . " promo codes\n\n";
 
-        // 6. Create Bookings
-        echo "📖 Creating bookings...\n";
-        $bookings = $this->createBookings($manager, $athletes, $services);
-        echo "   ✅ Created " . count($bookings) . " bookings\n\n";
+        // PHASE 2: Athletes Discover & Engage
+        echo "\n📋 PHASE 2: Athletes Discover & Engage\n";
+        echo "─────────────────────────────────────\n";
 
-        // 7. Create Payments
-        echo "💵 Creating payments...\n";
-        $this->createPayments($manager, $bookings);
-        echo "   ✅ Created payments for bookings\n\n";
-
-        // 8. Create Conversations & Messages
-        echo "💬 Creating conversations and messages...\n";
-        $conversations = $this->createConversations($manager, $athletes, $creators, $bookings);
-        echo "   ✅ Created " . count($conversations) . " conversations\n\n";
-
-        // 9. Create Likes
-        echo "❤️ Creating likes...\n";
+        // 7. Athletes browse and like creators
+        echo "❤️ Athletes discover and like creators...\n";
         $this->createLikes($manager, $allUsers, $creators);
         echo "   ✅ Created likes\n\n";
 
-        // 10. Create Bookmarks
-        echo "🔖 Creating bookmarks...\n";
+        // 8. Athletes bookmark favorite creators
+        echo "🔖 Athletes bookmark creators...\n";
         $this->createBookmarks($manager, $athletes, $creators);
         echo "   ✅ Created bookmarks\n\n";
 
+        // 9. Athletes start conversations
+        echo "💬 Athletes reach out to creators...\n";
+        $preBookingConversations = $this->createPreBookingConversations($manager, $athletes, $creators);
+        echo "   ✅ Created " . count($preBookingConversations) . " conversations\n\n";
+
+        // PHASE 3: Bookings & Payments
+        echo "\n📋 PHASE 3: Bookings & Payments\n";
+        echo "─────────────────────────────────────\n";
+
+        // 10. Platform creates gift cards for promotions
+        echo "🎁 Platform creates gift cards...\n";
+        $giftCards = $this->createGiftCards($manager, $athletes);
+        echo "   ✅ Created " . count($giftCards) . " gift cards\n\n";
+
+        // 11. Athletes add wallet credits
+        echo "💰 Athletes add wallet credits...\n";
+        $this->createWalletCredits($manager, $athletes);
+        echo "   ✅ Created wallet credits\n\n";
+
+        // 12. Athletes make bookings
+        echo "📖 Athletes book services...\n";
+        $bookings = $this->createBookings($manager, $athletes, $services);
+        echo "   ✅ Created " . count($bookings) . " bookings\n\n";
+
+        // 13. Athletes pay for bookings (with promo codes & gift cards)
+        echo "💵 Athletes pay for bookings...\n";
+        $payments = $this->createPaymentsWithDiscounts($manager, $bookings, $promoCodes, $giftCards);
+        echo "   ✅ Created " . count($payments) . " payments (some with discounts)\n\n";
+
+        // PHASE 4: Service Delivery
+        echo "\n📋 PHASE 4: Service Delivery\n";
+        echo "─────────────────────────────────────\n";
+
+        // 14. More conversations about bookings
+        echo "💬 Conversations about bookings...\n";
+        $bookingConversations = $this->createBookingConversations($manager, $bookings);
+        echo "   ✅ Created " . count($bookingConversations) . " booking conversations\n\n";
+
+        // 15. Creators upload deliverables
+        echo "📦 Creators upload deliverables...\n";
+        $deliverables = $this->createDeliverables($manager, $bookings);
+        echo "   ✅ Created " . count($deliverables) . " deliverables\n\n";
+
+        // 16. Athletes download deliverables (triggers payout)
+        echo "⬇️ Athletes download deliverables...\n";
+        $this->simulateDeliverableDownloads($manager, $bookings);
+        echo "   ✅ Simulated downloads and payouts\n\n";
+
+        // 17. Athletes leave reviews for completed bookings
+        echo "⭐ Athletes leave reviews...\n";
+        $reviews = $this->createReviews($manager, $bookings);
+        echo "   ✅ Created " . count($reviews) . " reviews\n\n";
+
         $manager->flush();
 
-        echo "🎉 Seeding completed successfully!\n\n";
-        $this->printSummary($allUsers, $services, $bookings, $conversations);
+        // 18. Update creator ratings based on reviews
+        echo "📊 Calculating creator ratings...\n";
+        $this->updateCreatorRatings($manager, $creators);
+        echo "   ✅ Updated ratings for all creators\n\n";
+
+        echo "\n════════════════════════════════════════════════════════════\n";
+        echo "🎉 Realistic Plugame flow seeding completed!\n\n";
+        $this->printDetailedSummary($allUsers, $services, $bookings, $payments, $feedPosts, $promoCodes, $giftCards, $reviews);
     }
 
     // ============================================
@@ -159,7 +227,7 @@ class AppFixtures extends Fixture
             $user->setBio($this->generateBio('athlete'));
             $user->setSport($this->randomElement(self::SPORTS));
             $user->setLocation($this->randomElement(self::LOCATIONS));
-            $user->setAvatarUrl("https://i.pravatar.cc/300?img={$i}");
+            $user->setUserPhoto("https://i.pravatar.cc/300?img={$i}"); // Use userPhoto instead of avatarUrl
             $user->setIsPlugPlus($this->randomBool(20)); // 20% are Plug+
             $user->setIsVerified($this->randomBool(60));
             $user->setPhoneNumber('+33' . rand(600000000, 699999999));
@@ -210,25 +278,14 @@ class AppFixtures extends Fixture
             $user->setBio($this->generateBio('creator'));
             $user->setSport($this->randomElement(self::SPORTS));
             $user->setLocation($this->randomElement(self::LOCATIONS));
-            $user->setAvatarUrl("https://i.pravatar.cc/300?img=" . ($count + $i));
-            $user->setCoverUrl("https://picsum.photos/1200/400?random={$i}");
+            $user->setUserPhoto("https://i.pravatar.cc/300?img=" . ($count + $i)); // Use userPhoto instead of avatarUrl
+            // Removed setCoverUrl - no cover photos
             $user->setIsVerified($this->randomBool(70));
             $user->setPhoneNumber('+33' . rand(600000000, 699999999));
             $user->setLocale('fr');
             $user->setTimezone('Europe/Paris');
 
             $manager->persist($user);
-
-            $avatar = new MediaAsset();
-            $avatar->setOwner($user)
-                   ->setPurpose(MediaAsset::PURPOSE_AVATAR)
-                   ->setFilename('avatar_' . $user->getId() . '.jpg')
-                   ->setPublicUrl('https://picsum.photos/200?random=' . $user->getId())
-                   ->setType(MediaAsset::TYPE_IMAGE)
-                   ->setBytes(rand(10000, 50000))
-                   ->setStorageKey('avatar_' . $user->getId() . '.jpg');
-
-            $manager->persist($avatar);
 
             // Create CreatorProfile linked to this user
             $profile = new CreatorProfile($user);
@@ -242,7 +299,7 @@ class AppFixtures extends Fixture
                 'lens' => '24-70mm'
             ]);
             $profile->setSpecialties([$user->getSport(), 'action', 'editorial']);
-            $profile->setCoverPhoto("https://picsum.photos/1200/300?random=creator_cover_{$i}");
+            // Removed setCoverPhoto - no cover photos
             $profile->setResponseTime($this->randomElement([60, 120, 240])); // minutes
             $profile->setAcceptanceRate(round(rand(70, 99) / 100, 2));
             $profile->setCompletionRate(round(rand(80, 100) / 100, 2));
@@ -253,23 +310,6 @@ class AppFixtures extends Fixture
             ]);
             $profile->setAvgRating((string)round(rand(30, 50) / 10, 1)); // e.g. "4.6"
             $profile->setRatingsCount(rand(0, 400));
-
-            $numMedia = rand(1, 4);
-            for ($j = 0; $j < $numMedia; $j++) {
-                $media = new MediaAsset();
-                $media->setOwner($user)
-                    ->setCreatorProfile($profile)
-                    ->setPurpose(MediaAsset::PURPOSE_CREATOR_FEED)
-                    ->setFilename('feed_' . $user->getId() . '_' . $j . '.jpg')
-                    ->setPublicUrl('https://picsum.photos/400/300?random=' . ($user->getId() + $j))
-                    ->setType(MediaAsset::TYPE_IMAGE)
-                    ->setStorageKey('feed_' . $user->getId() . '_' . $i . '.jpg')
-                    ->setBytes(rand(50000, 150000))
-                    ->setCaption('test');
-
-                $manager->persist($media);
-            }
-
 
             // Link profile to user and persist
             $user->setCreatorProfile($profile);
@@ -739,6 +779,588 @@ class AppFixtures extends Fixture
 
 
     // ============================================
+    // CREATE PROMO CODES
+    // ============================================
+
+    private function createPromoCodes(ObjectManager $manager, array $creators): array
+    {
+        $promoCodes = [];
+        $usedCodes = []; // Track used codes to prevent duplicates
+
+        // Create 2-3 promo codes per creator
+        foreach ($creators as $creator) {
+            $codeCount = rand(2, 3);
+
+            for ($i = 0; $i < $codeCount; $i++) {
+                $promoCode = new PromoCode();
+
+                // Generate unique code
+                $attempts = 0;
+                do {
+                    // Generate code based on creator name and random suffix
+                    $codeSuffix = strtoupper(substr($creator->getUsername(), 0, 4)) . rand(1, 999);
+                    $codeTypes = ['SUMMER', 'WINTER', 'SPRING', 'PROMO', 'SAVE', 'VIP', 'SPORT', 'ACTION'];
+                    $codePrefix = $this->randomElement($codeTypes);
+                    $code = $codePrefix . $codeSuffix;
+                    $attempts++;
+                } while (in_array($code, $usedCodes) && $attempts < 10);
+
+                $usedCodes[] = $code;
+
+                $promoCode->setCode($code);
+                $promoCode->setCreator($creator);
+
+                // 70% percentage discount, 30% fixed amount
+                if ($this->randomBool(70)) {
+                    $promoCode->setDiscountType('percentage');
+                    $promoCode->setDiscountValue(rand(10, 30)); // 10-30% off
+                } else {
+                    $promoCode->setDiscountType('fixed_amount');
+                    $promoCode->setDiscountValue(rand(1000, 5000)); // 10-50€ off
+                }
+
+                $promoCode->setDescription('Special discount for ' . $creator->getFullName());
+                $promoCode->setMaxUses($this->randomBool(60) ? rand(50, 200) : null);
+                $promoCode->setMaxUsesPerUser($this->randomBool(50) ? 1 : null);
+                $promoCode->setMinAmount($this->randomBool(40) ? rand(3000, 10000) : null);
+
+                // 80% have expiration dates
+                if ($this->randomBool(80)) {
+                    $daysToExpire = rand(30, 365);
+                    $promoCode->setExpiresAt(new \DateTimeImmutable("+{$daysToExpire} days"));
+                }
+
+                // 90% are active
+                $promoCode->setIsActive($this->randomBool(90));
+
+                $manager->persist($promoCode);
+                $promoCodes[] = $promoCode;
+            }
+        }
+
+        return $promoCodes;
+    }
+
+    // ============================================
+    // CREATE GIFT CARDS
+    // ============================================
+
+    private function createGiftCards(ObjectManager $manager, array $athletes): array
+    {
+        $giftCards = [];
+
+        // Create 10-15 gift cards
+        $cardCount = rand(10, 15);
+
+        for ($i = 0; $i < $cardCount; $i++) {
+            $giftCard = new GiftCard();
+
+            // Random balance between 20€ and 200€
+            $balance = rand(2000, 20000);
+            $giftCard->setInitialBalance($balance);
+            $giftCard->setCurrency('EUR');
+
+            // 30% are purchased by specific athletes
+            if ($this->randomBool(30) && count($athletes) > 0) {
+                $purchaser = $this->randomElement($athletes);
+                $giftCard->setPurchasedBy($purchaser);
+            }
+
+            // 40% have been redeemed (partially used)
+            if ($this->randomBool(40)) {
+                $redeemer = $this->randomElement($athletes);
+                $giftCard->setRedeemedBy($redeemer);
+                $giftCard->setRedeemedAt(new \DateTimeImmutable('-' . rand(1, 60) . ' days'));
+
+                // Use between 10% and 90% of the balance
+                $usedPercentage = rand(10, 90) / 100;
+                $remainingBalance = (int)($balance * (1 - $usedPercentage));
+                $giftCard->setCurrentBalance($remainingBalance);
+
+                // If fully used, deactivate
+                if ($remainingBalance <= 0) {
+                    $giftCard->setIsActive(false);
+                }
+            }
+
+            // Add expiration date (1-2 years from now)
+            $daysToExpire = rand(365, 730);
+            $giftCard->setExpiresAt(new \DateTimeImmutable("+{$daysToExpire} days"));
+
+            // Some have personal messages
+            if ($this->randomBool(30)) {
+                $messages = [
+                    'Joyeux anniversaire !',
+                    'Bon Noël !',
+                    'Profite bien de ce cadeau !',
+                    'Pour tes futurs cours de sport !',
+                    'Merci pour tout !',
+                ];
+                $giftCard->setMessage($this->randomElement($messages));
+            }
+
+            $manager->persist($giftCard);
+            $giftCards[] = $giftCard;
+        }
+
+        return $giftCards;
+    }
+
+    // ============================================
+    // CREATE CREATOR FEED CONTENT
+    // ============================================
+
+    private function createCreatorFeedContent(ObjectManager $manager, array $creators): array
+    {
+        $feedPosts = [];
+
+        foreach ($creators as $creator) {
+            $postCount = rand(5, 15);
+
+            for ($i = 0; $i < $postCount; $i++) {
+                $isVideo = $this->randomBool(40);
+                $aspectRatio = $this->weightedRandom([
+                    '1:1'  => 30,
+                    '4:5'  => 20,
+                    '16:9' => 25,
+                    '9:16' => 25,
+                ]);
+
+                [$width, $height] = $this->getDimensionsForRatio($aspectRatio);
+
+                $media = new MediaAsset();
+                $media->setOwner($creator)
+                    ->setCreatorProfile($creator->getCreatorProfile())
+                    ->setPurpose(MediaAsset::PURPOSE_CREATOR_FEED)
+                    ->setType($isVideo ? MediaAsset::TYPE_VIDEO : MediaAsset::TYPE_IMAGE)
+                    ->setAspectRatio($aspectRatio)
+                    ->setWidth($width)
+                    ->setHeight($height)
+                    ->setFilename("feed_{$i}." . ($isVideo ? 'mp4' : 'jpg'))
+                    ->setStorageKey("creator/{$creator->getId()}/feed_{$i}")
+                    ->setPublicUrl("https://picsum.photos/{$width}/{$height}?random={$i}")
+                    ->setBytes(rand($isVideo ? 5000000 : 500000, $isVideo ? 50000000 : 5000000))
+                    ->setCaption($this->generateFeedCaption())
+                    ->setContentType($isVideo ? 'video/mp4' : 'image/jpeg');
+
+                if ($isVideo) {
+                    $media->setDurationSec(rand(10, 180));
+                    $media->setThumbnailUrl("https://picsum.photos/{$width}/{$height}?random=thumb{$i}");
+                }
+
+                $manager->persist($media);
+                $feedPosts[] = $media;
+            }
+        }
+
+        return $feedPosts;
+    }
+
+    // ============================================
+    // CREATE PRE-BOOKING CONVERSATIONS
+    // ============================================
+
+    private function createPreBookingConversations(ObjectManager $manager, array $athletes, array $creators): array
+    {
+        $conversations = [];
+        $convCount = rand(40, 60);
+
+        for ($i = 0; $i < $convCount; $i++) {
+            $athlete = $this->randomElement($athletes);
+            $creator = $this->randomElement($creators);
+
+            $conversation = new Conversation();
+            $conversation->setAthlete($athlete);
+            $conversation->setCreator($creator);
+
+            $messageCount = rand(3, 10);
+            $this->createMessages($manager, $conversation, $messageCount);
+
+            $manager->persist($conversation);
+            $conversations[] = $conversation;
+        }
+
+        return $conversations;
+    }
+
+    // ============================================
+    // CREATE PAYMENTS WITH DISCOUNTS
+    // ============================================
+
+    private function createPaymentsWithDiscounts(
+        ObjectManager $manager,
+        array $bookings,
+        array $promoCodes,
+        array $giftCards
+    ): array {
+        $payments = [];
+
+        foreach ($bookings as $booking) {
+            if (!in_array($booking->getStatus(), [Booking::STATUS_ACCEPTED, Booking::STATUS_COMPLETED])) {
+                continue;
+            }
+
+            $service = $booking->getService();
+            if (!$service) continue;
+
+            $originalAmount = $booking->getTotalCents();
+            $finalAmount = $originalAmount;
+            $usedPromoCode = null;
+            $usedGiftCard = null;
+            $discountAmount = 0;
+            $giftCardAmount = 0;
+
+            // 30% chance to use promo code
+            if ($this->randomBool(30) && count($promoCodes) > 0) {
+                $eligibleCodes = array_filter($promoCodes, fn($pc) =>
+                    $pc->getCreator() === $booking->getCreator() && $pc->isValid()
+                );
+
+                if (count($eligibleCodes) > 0) {
+                    $promoCode = $this->randomElement(array_values($eligibleCodes));
+                    $discountAmount = $promoCode->calculateDiscount($originalAmount);
+                    $finalAmount -= $discountAmount;
+                    $usedPromoCode = $promoCode;
+                    $promoCode->incrementUsedCount();
+                }
+            }
+
+            // 20% chance to use gift card
+            if ($this->randomBool(20) && count($giftCards) > 0) {
+                $validCards = array_filter($giftCards, fn($gc) => $gc->isValid());
+
+                if (count($validCards) > 0) {
+                    $giftCard = $this->randomElement(array_values($validCards));
+                    $giftCardAmount = $giftCard->deduct($finalAmount);
+                    $finalAmount -= $giftCardAmount;
+                    $usedGiftCard = $giftCard;
+
+                    if (!$giftCard->getRedeemedBy()) {
+                        $giftCard->redeem($booking->getAthlete());
+                    }
+                }
+            }
+
+            $payment = new Payment();
+            $payment->setUser($booking->getAthlete())
+                ->setBooking($booking)
+                ->setOriginalAmountCents($originalAmount)
+                ->setDiscountAmountCents($discountAmount)
+                ->setGiftCardAmountCents($giftCardAmount)
+                ->setAmountCents(max(50, $finalAmount))
+                ->setCurrency('EUR')
+                ->setPaymentMethod('card')
+                ->setPaymentGateway('stripe')
+                ->setStatus(Payment::STATUS_COMPLETED)
+                ->setStripePaymentIntentId('pi_' . bin2hex(random_bytes(12)))
+                ->setStripeChargeId('ch_' . bin2hex(random_bytes(12)));
+
+            if ($usedPromoCode) {
+                $payment->setPromoCode($usedPromoCode);
+            }
+
+            if ($usedGiftCard) {
+                $payment->setGiftCard($usedGiftCard);
+            }
+
+            $manager->persist($payment);
+            $booking->setPayment($payment);
+            $payments[] = $payment;
+        }
+
+        return $payments;
+    }
+
+    // ============================================
+    // CREATE BOOKING CONVERSATIONS
+    // ============================================
+
+    private function createBookingConversations(ObjectManager $manager, array $bookings): array
+    {
+        $conversations = [];
+
+        foreach ($bookings as $booking) {
+            if (!$this->randomBool(60)) continue;
+
+            $conversation = new Conversation();
+            $conversation->setAthlete($booking->getAthlete());
+            $conversation->setCreator($booking->getCreator());
+            $conversation->setBooking($booking);
+
+            $messageCount = rand(5, 15);
+            $this->createMessages($manager, $conversation, $messageCount);
+
+            $manager->persist($conversation);
+            $conversations[] = $conversation;
+        }
+
+        return $conversations;
+    }
+
+    // ============================================
+    // CREATE DELIVERABLES
+    // ============================================
+
+    private function createDeliverables(ObjectManager $manager, array $bookings): array
+    {
+        $deliverables = [];
+
+        foreach ($bookings as $booking) {
+            if (!in_array($booking->getStatus(), [Booking::STATUS_ACCEPTED, Booking::STATUS_COMPLETED])) {
+                continue;
+            }
+
+            if (!$this->randomBool(70)) continue;
+
+            $service = $booking->getService();
+            $deliverableCount = match($service->getKind()) {
+                'PER_ASSET' => rand(10, 50),
+                'PACKAGE' => rand(30, 100),
+                'HOURLY' => rand(20, 60),
+                default => rand(10, 30),
+            };
+
+            for ($i = 0; $i < $deliverableCount; $i++) {
+                $isVideo = $this->randomBool(20);
+                $aspectRatio = $this->weightedRandom([
+                    '16:9' => 60,
+                    '4:5'  => 20,
+                    '1:1'  => 10,
+                    '9:16' => 10,
+                ]);
+
+                [$width, $height] = $this->getDimensionsForRatio($aspectRatio);
+
+                $deliverable = new MediaAsset();
+                $deliverable->setOwner($booking->getCreator())
+                    ->setBooking($booking)
+                    ->setPurpose(MediaAsset::PURPOSE_BOOKING_DELIVERABLE)
+                    ->setType($isVideo ? MediaAsset::TYPE_VIDEO : MediaAsset::TYPE_IMAGE)
+                    ->setAspectRatio($aspectRatio)
+                    ->setWidth($width)
+                    ->setHeight($height)
+                    ->setFilename("deliverable_{$i}." . ($isVideo ? 'mp4' : 'jpg'))
+                    ->setStorageKey("deliverables/{$booking->getId()}/{$i}")
+                    ->setPublicUrl("https://picsum.photos/{$width}/{$height}?random=del{$i}")
+                    ->setBytes(rand($isVideo ? 10000000 : 2000000, $isVideo ? 100000000 : 10000000))
+                    ->setContentType($isVideo ? 'video/mp4' : 'image/jpeg');
+
+                if ($isVideo) {
+                    $deliverable->setDurationSec(rand(5, 30));
+                    $deliverable->setThumbnailUrl("https://picsum.photos/{$width}/{$height}?random=thumb{$i}");
+                }
+
+                $manager->persist($deliverable);
+                $deliverables[] = $deliverable;
+            }
+
+            $booking->isDeliverablesUnlocked(false);
+        }
+
+        return $deliverables;
+    }
+
+    // ============================================
+    // SIMULATE DELIVERABLE DOWNLOADS
+    // ============================================
+
+    private function simulateDeliverableDownloads(ObjectManager $manager, array $bookings): void
+    {
+        foreach ($bookings as $booking) {
+            if ($booking->getStatus() !== Booking::STATUS_COMPLETED) continue;
+            if ($booking->getDeliverables()->count() === 0) continue;
+
+            if (!$this->randomBool(80)) continue;
+
+            $booking->setDeliverableDownloadedAt(new \DateTimeImmutable('-' . rand(1, 7) . ' days'));
+            $booking->setDeliverablesUnlocked(true);
+        }
+    }
+
+    // ============================================
+    // HELPER METHODS
+    // ============================================
+
+    private function getDimensionsForRatio(string $ratio): array
+    {
+        return match($ratio) {
+            '1:1'  => [1080, 1080],
+            '4:5'  => [1080, 1350],
+            '16:9' => [1920, 1080],
+            '9:16' => [1080, 1920],
+            '21:9' => [2560, 1080],
+            default => [1080, 1080],
+        };
+    }
+
+    private function generateFeedCaption(): string
+    {
+        $captions = [
+            'Training session today 💪',
+            'Great game! #sports #action',
+            'Behind the scenes 📸',
+            'New content coming soon!',
+            'Check out this amazing moment!',
+            'Hard work pays off 🔥',
+            'Game day vibes ⚽',
+            'Action shot! 🏀',
+            'Training hard for the next match',
+            'Best moment of the game!',
+        ];
+
+        return $this->randomElement($captions);
+    }
+
+    // ============================================
+    // CREATE REVIEWS
+    // ============================================
+
+    private function createReviews(ObjectManager $manager, array $bookings): array
+    {
+        $reviews = [];
+
+        foreach ($bookings as $booking) {
+            // Only create reviews for completed bookings
+            if ($booking->getStatus() !== Booking::STATUS_COMPLETED) {
+                continue;
+            }
+
+            // 70% of completed bookings get reviews
+            if (!$this->randomBool(70)) {
+                continue;
+            }
+
+            // Skip if already has a review
+            if ($booking->getReview()) {
+                continue;
+            }
+
+            $review = new Review($booking);
+            $review->setReviewer($booking->getAthlete());
+            $review->setCreator($booking->getCreator());
+
+            // Realistic rating distribution (weighted towards 4-5 stars)
+            $rating = $this->weightedRandom([
+                5 => 50,  // 50% are 5 stars
+                4 => 30,  // 30% are 4 stars
+                3 => 15,  // 15% are 3 stars
+                2 => 4,   // 4% are 2 stars
+                1 => 1,   // 1% are 1 star
+            ]);
+
+            $review->setRating($rating);
+
+            // 60% of reviews have comments
+            if ($this->randomBool(60)) {
+                $comments = [
+                    'Excellent service! Very professional.',
+                    'Great experience, highly recommend!',
+                    'Amazing work, exceeded my expectations!',
+                    'Very satisfied with the quality.',
+                    'Good work, will book again.',
+                    'Professional and on time.',
+                    'Quality content, thank you!',
+                    'Perfect! Exactly what I needed.',
+                    'Great communication and results.',
+                    'Happy with the final product.',
+                ];
+
+                if ($rating <= 3) {
+                    $comments = [
+                        'Good but could be better.',
+                        'Average experience.',
+                        'Not quite what I expected.',
+                        'Decent work but had some issues.',
+                        'OK but room for improvement.',
+                    ];
+                }
+
+                $review->setComment($this->randomElement($comments));
+            }
+
+            $manager->persist($review);
+            $reviews[] = $review;
+        }
+
+        return $reviews;
+    }
+
+    // ============================================
+    // UPDATE CREATOR RATINGS
+    // ============================================
+
+    private function updateCreatorRatings(ObjectManager $manager, array $creators): void
+    {
+        foreach ($creators as $creator) {
+            $creatorProfile = $creator->getCreatorProfile();
+            if (!$creatorProfile) {
+                continue;
+            }
+
+            // Get all reviews for this creator
+            $reviews = $manager->getRepository(Review::class)->findBy(['creator' => $creator]);
+
+            if (empty($reviews)) {
+                $creatorProfile->setAvgRating(null);
+                $creatorProfile->setRatingsCount(0);
+                continue;
+            }
+
+            // Calculate average
+            $totalRating = 0;
+            foreach ($reviews as $review) {
+                $totalRating += $review->getRating();
+            }
+
+            $avgRating = $totalRating / count($reviews);
+            $avgRatingFormatted = number_format($avgRating, 1);
+
+            $creatorProfile->setAvgRating($avgRatingFormatted);
+            $creatorProfile->setRatingsCount(count($reviews));
+        }
+
+        $manager->flush();
+    }
+
+    private function printDetailedSummary(
+        array $users,
+        array $services,
+        array $bookings,
+        array $payments,
+        array $feedPosts,
+        array $promoCodes,
+        array $giftCards,
+        array $reviews = []
+    ): void {
+        echo "📊 DETAILED SUMMARY:\n";
+        echo "════════════════════════════════════════════════════════════\n";
+        echo "   👥 Users: " . count($users) . "\n";
+        echo "   📸 Feed Posts: " . count($feedPosts) . "\n";
+        echo "   💼 Services: " . count($services) . "\n";
+        echo "   📖 Bookings: " . count($bookings) . "\n";
+        echo "   💵 Payments: " . count($payments) . "\n";
+
+        $paymentsWithPromo = count(array_filter($payments, fn($p) => $p->hasPromoCode()));
+        $paymentsWithGift = count(array_filter($payments, fn($p) => $p->hasGiftCard()));
+
+        echo "      - With promo code: {$paymentsWithPromo}\n";
+        echo "      - With gift card: {$paymentsWithGift}\n";
+        echo "   🎫 Promo Codes: " . count($promoCodes) . "\n";
+        echo "   🎁 Gift Cards: " . count($giftCards) . "\n";
+
+        $activeGiftCards = count(array_filter($giftCards, fn($gc) => $gc->isValid()));
+        echo "      - Active: {$activeGiftCards}\n";
+        echo "   ⭐ Reviews: " . count($reviews) . "\n";
+
+        echo "\n";
+        echo "🔐 LOGIN CREDENTIALS:\n";
+        echo "   Email: athlete1@example.com\n";
+        echo "   Email: creator1@example.com\n";
+        echo "   Password: " . self::PASSWORD . "\n";
+        echo "════════════════════════════════════════════════════════════\n";
+    }
+
+    // ============================================
     // HELPER METHODS
     // ============================================
 
@@ -854,6 +1476,139 @@ class AppFixtures extends Fixture
         return array_key_first($weights);
     }
 
+    /**
+     * Create OAuth test users (Google and Apple)
+     */
+    private function createOAuthUsers(ObjectManager $manager): array
+    {
+        $oauthUsers = [];
+
+        // Google OAuth user - Athlete
+        $googleUser = new User();
+        $googleUser->setUsername('google_athlete');
+        $googleUser->setEmail('googletest@example.com');
+        $googleUser->setPassword($this->passwordHasher->hashPassword($googleUser, self::PASSWORD));
+        $googleUser->setRoles([User::ROLE_ATHLETE]);
+        $googleUser->setFullName('Google Test User');
+        $googleUser->setUserPhoto('https://i.pravatar.cc/300?img=50');
+        $googleUser->setPhoneNumber('+33612345678');
+        $googleUser->setLocation('Paris, France');
+        $googleUser->setSport('football');
+        $googleUser->setIsVerified(true);
+        $googleUser->setIsActive(true);
+
+        $googleOAuth = new OAuthProvider($googleUser, 'google', '123456789012345678901');
+        $googleOAuth->setProviderEmail('googletest@example.com');
+        $googleOAuth->setProviderName('Google Test User');
+        $googleOAuth->setProviderPhotoUrl('https://i.pravatar.cc/300?img=50');
+        $googleOAuth->setProviderData([
+            'sub' => '123456789012345678901',
+            'email' => 'googletest@example.com',
+            'email_verified' => true,
+            'name' => 'Google Test User',
+            'picture' => 'https://i.pravatar.cc/300?img=50',
+        ]);
+
+        $googleUser->addOauthProvider($googleOAuth);
+        $manager->persist($googleUser);
+        $manager->persist($googleOAuth);
+        $oauthUsers[] = $googleUser;
+
+        // Create athlete profile
+        $athleteProfile = new AthleteProfile($googleUser);
+        $athleteProfile->setPreferredSports(['football', 'basketball']);
+        $athleteProfile->setSkillLevel('intermediate');
+        $manager->persist($athleteProfile);
+
+        // Apple OAuth user - Creator
+        $appleUser = new User();
+        $appleUser->setUsername('apple_creator');
+        $appleUser->setEmail('appletest@example.com');
+        $appleUser->setPassword($this->passwordHasher->hashPassword($appleUser, self::PASSWORD));
+        $appleUser->setRoles([User::ROLE_CREATOR]);
+        $appleUser->setFullName('Apple Test Creator');
+        $appleUser->setUserPhoto('https://i.pravatar.cc/300?img=51');
+        $appleUser->setPhoneNumber('+33623456789');
+        $appleUser->setLocation('Lyon, France');
+        $appleUser->setSport('photography');
+        $appleUser->setIsVerified(true);
+        $appleUser->setIsActive(true);
+
+        $appleOAuth = new OAuthProvider($appleUser, 'apple', '000123.abc123def456.7890');
+        $appleOAuth->setProviderEmail('appletest@example.com');
+        $appleOAuth->setProviderName('Apple Test Creator');
+        $appleOAuth->setProviderData([
+            'sub' => '000123.abc123def456.7890',
+            'email' => 'appletest@example.com',
+            'email_verified' => true,
+        ]);
+
+        $appleUser->addOauthProvider($appleOAuth);
+        $manager->persist($appleUser);
+        $manager->persist($appleOAuth);
+        $oauthUsers[] = $appleUser;
+
+        // Create creator profile
+        $creatorProfile = new CreatorProfile($appleUser);
+        $creatorProfile->setDisplayName('Apple Test Creator');
+        $creatorProfile->setBaseCity('Lyon');
+        $creatorProfile->setBio('Professional photographer specializing in sports content. Testing OAuth integration.');
+        $creatorProfile->setSpecialties(['photography', 'action', 'sports']);
+        $creatorProfile->setGear(['Canon EOS R5', 'Sony A7IV', 'DJI Mavic 3']);
+        $creatorProfile->setTravelRadiusKm(50);
+        $manager->persist($creatorProfile);
+
+        // Mixed OAuth user - Has both Google and Apple linked
+        $mixedUser = new User();
+        $mixedUser->setUsername('multi_oauth');
+        $mixedUser->setEmail('multioauth@example.com');
+        $mixedUser->setPassword($this->passwordHasher->hashPassword($mixedUser, self::PASSWORD));
+        $mixedUser->setRoles([User::ROLE_ATHLETE]);
+        $mixedUser->setFullName('Multi OAuth User');
+        $mixedUser->setUserPhoto('https://i.pravatar.cc/300?img=52');
+        $mixedUser->setPhoneNumber('+33634567890');
+        $mixedUser->setLocation('Marseille, France');
+        $mixedUser->setSport('tennis');
+        $mixedUser->setIsVerified(true);
+        $mixedUser->setIsActive(true);
+
+        // Link both Google and Apple
+        $mixedGoogleOAuth = new OAuthProvider($mixedUser, 'google', '999888777666555444333');
+        $mixedGoogleOAuth->setProviderEmail('multioauth@example.com');
+        $mixedGoogleOAuth->setProviderName('Multi OAuth User');
+        $mixedGoogleOAuth->setProviderPhotoUrl('https://i.pravatar.cc/300?img=52');
+        $mixedGoogleOAuth->setProviderData([
+            'sub' => '999888777666555444333',
+            'email' => 'multioauth@example.com',
+            'email_verified' => true,
+            'name' => 'Multi OAuth User',
+        ]);
+
+        $mixedAppleOAuth = new OAuthProvider($mixedUser, 'apple', '000999.xyz789abc456.1234');
+        $mixedAppleOAuth->setProviderEmail('multioauth@example.com');
+        $mixedAppleOAuth->setProviderName('Multi OAuth User');
+        $mixedAppleOAuth->setProviderData([
+            'sub' => '000999.xyz789abc456.1234',
+            'email' => 'multioauth@example.com',
+            'email_verified' => true,
+        ]);
+
+        $mixedUser->addOauthProvider($mixedGoogleOAuth);
+        $mixedUser->addOauthProvider($mixedAppleOAuth);
+        $manager->persist($mixedUser);
+        $manager->persist($mixedGoogleOAuth);
+        $manager->persist($mixedAppleOAuth);
+        $oauthUsers[] = $mixedUser;
+
+        // Create athlete profile
+        $athleteProfile2 = new AthleteProfile($mixedUser);
+        $athleteProfile2->setPreferredSports(['tennis', 'volleyball']);
+        $athleteProfile2->setSkillLevel('advanced');
+        $manager->persist($athleteProfile2);
+
+        return $oauthUsers;
+    }
+
     private function printSummary(array $users, array $services, array $bookings, array $conversations): void
     {
         echo "📊 SUMMARY:\n";
@@ -865,6 +1620,12 @@ class AppFixtures extends Fixture
         echo "🔐 LOGIN CREDENTIALS:\n";
         echo "   Email: athlete1@example.com\n";
         echo "   Email: creator1@example.com\n";
+        echo "   Password: " . self::PASSWORD . "\n";
+        echo "\n";
+        echo "🔐 OAUTH TEST USERS:\n";
+        echo "   Google: googletest@example.com (Athlete)\n";
+        echo "   Apple: appletest@example.com (Creator)\n";
+        echo "   Multi: multioauth@example.com (Both Google + Apple)\n";
         echo "   Password: " . self::PASSWORD . "\n";
     }
 }

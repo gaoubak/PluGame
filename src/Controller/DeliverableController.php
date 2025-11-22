@@ -15,6 +15,7 @@ use App\Service\StripePayoutService;
 use App\Traits\ApiResponseTrait;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -42,19 +43,23 @@ class DeliverableController extends AbstractController
     /**
      * ✅ Creator uploads deliverable files for a booking
      * POST /api/deliverables/upload
-     * Form-data: file, bookingId
+     * Form-data: files[] (array of files), bookingId
      */
-    #[Route('/upload', name: 'deliverable_upload', methods: ['POST'])]
+    #[Route('/upload/{bookingId}', name: 'deliverable_upload', methods: ['POST'])]
     public function upload(
         Request $request,
-        #[CurrentUser] User $user
+        #[CurrentUser] User $user,
+        string $bookingId
     ): JsonResponse {
-        $file = $request->files->get('file');
-        $bookingId = $request->request->get('bookingId');
+        $files = $request->files->get('files');
+        if (!$files) {
+            $files = $request->files->all('files'); 
+        }
+        $files = is_array($files) ? $files : ($files instanceof UploadedFile ? [$files] : []);
 
-        if (!$file || !$bookingId) {
+        if (empty($files) || !$bookingId) {
             return $this->errorResponse(
-                'file and bookingId are required',
+                'files (array of files) and bookingId are required',
                 Response::HTTP_BAD_REQUEST
             );
         }
@@ -71,46 +76,78 @@ class DeliverableController extends AbstractController
         }
 
         // Verify booking is completed or confirmed
-        if (!in_array($booking->getStatus(), ['confirmed', 'completed'])) {
+        if (!in_array($booking->getStatus(), ['confirmed', 'completed','COMPLETED'])) {
             return $this->errorResponse(
                 'Can only upload deliverables for confirmed or completed bookings',
                 Response::HTTP_BAD_REQUEST
             );
         }
-
-        // Upload to R2
+        
+        $uploadedAssets = [];
         $prefix = "deliverables/{$bookingId}";
-        $put = $this->r2->upload($file, $prefix);
 
-        // Create MediaAsset
-        $asset = (new MediaAsset())
-            ->setOwner($user)
-            ->setPurpose(MediaAsset::PURPOSE_BOOKING_DELIVERABLE)
-            ->setStorageKey($put['key'])
-            ->setPublicUrl($put['url'] ?: null)
-            ->setFilename($file->getClientOriginalName())
-            ->setContentType($file->getClientMimeType() ?? 'application/octet-stream')
-            ->setBytes($file->getSize() ?? 0)
-            ->setBooking($booking);
+        /** @var UploadedFile $file */
+        foreach ($files as $file) {
+            if (!$file instanceof UploadedFile) {
+                // Skip any entry that is not a valid uploaded file object
+                continue; 
+            }
 
-        $this->em->persist($asset);
-        $this->em->flush();
+            // Upload to R2
+            $put = $this->r2->upload($file, $prefix);
 
-        // ✅ Publish Mercure notification to athlete
+            $contentType = $file->getClientMimeType() ?? 'application/octet-stream';
+
+            // Auto-detect media type from MIME type
+            $mediaType = str_starts_with($contentType, 'video/') ? 'VIDEO' : 'IMAGE';
+
+            // Get media dimensions and detect aspect ratio
+            $dimensions = $this->getMediaDimensions($file, $contentType);
+            $aspectRatio = $this->detectAspectRatio($dimensions['width'], $dimensions['height']);
+
+            // Create MediaAsset
+            $asset = (new MediaAsset())
+                ->setOwner($user)
+                ->setPurpose(MediaAsset::PURPOSE_BOOKING_DELIVERABLE)
+                ->setStorageKey($put['key'])
+                ->setPublicUrl($put['url'] ?: null)
+                ->setFilename($file->getClientOriginalName())
+                ->setContentType($contentType)
+                ->setType($mediaType)
+                ->setBytes($file->getSize() ?? 0)
+                ->setWidth($dimensions['width'])
+                ->setHeight($dimensions['height'])
+                ->setAspectRatio($aspectRatio)
+                ->setBooking($booking);
+
+            $this->em->persist($asset);
+
+            $uploadedAssets[] = [
+                'id' => $asset->getId(),
+                'filename' => $asset->getFilename(),
+                'publicUrl' => $asset->getPublicUrl(),
+                'bytes' => $asset->getBytes(),
+                'type' => $asset->getType(),
+                'aspectRatio' => $asset->getAspectRatio(),
+                'width' => $asset->getWidth(),
+                'height' => $asset->getHeight(),
+                // Note: Creation date will be set on flush, which happens after the loop
+            ];
+        }
+
+        $this->em->flush(); // Flush all new assets at once
+
+        // ✅ Publish Mercure notification to athlete (once for the batch)
         try {
+            // Recalculate total files after flushing
+            $this->em->refresh($booking); 
             $totalFiles = $booking->getDeliverables()->count();
             $this->mercurePublisher->publishDeliverableUploaded($booking, $totalFiles);
         } catch (\Exception $e) {
             error_log('Mercure publish failed: ' . $e->getMessage());
         }
 
-        return $this->createdResponse([
-            'id' => $asset->getId(),
-            'filename' => $asset->getFilename(),
-            'publicUrl' => $asset->getPublicUrl(),
-            'bytes' => $asset->getBytes(),
-            'uploadedAt' => $asset->getCreatedAt()->format(\DATE_ATOM),
-        ], 'File uploaded successfully');
+        return $this->createdResponse($uploadedAssets, 'Files uploaded successfully');
     }
 
     /**
@@ -146,6 +183,9 @@ class DeliverableController extends AbstractController
                 'bytes' => $asset->getBytes(),
                 'contentType' => $asset->getContentType(),
                 'type' => $asset->getType(),
+                'aspectRatio' => $asset->getAspectRatio(),
+                'width' => $asset->getWidth(),
+                'height' => $asset->getHeight(),
                 'uploadedAt' => $asset->getCreatedAt()->format(\DATE_ATOM),
             ];
         }, $deliverables->toArray());
@@ -366,5 +406,75 @@ class DeliverableController extends AbstractController
         $zip->close();
 
         return $zipPath;
+    }
+
+    /**
+     * Get dimensions from uploaded file
+     */
+    private function getMediaDimensions($file, string $contentType): array
+    {
+        $width = 0;
+        $height = 0;
+
+        try {
+            if (str_starts_with($contentType, 'image/')) {
+                $imageInfo = @getimagesize($file->getPathname());
+                if ($imageInfo !== false) {
+                    $width = $imageInfo[0];
+                    $height = $imageInfo[1];
+                }
+            }
+            // Video dimensions would require FFmpeg/FFprobe - not implemented yet
+        } catch (\Exception $e) {
+            // If dimensions can't be read, return 0,0
+        }
+
+        return ['width' => $width, 'height' => $height];
+    }
+
+    /**
+     * Detect aspect ratio from dimensions
+     */
+    private function detectAspectRatio(int $width, int $height): string
+    {
+        if ($width === 0 || $height === 0) {
+            return '1:1'; // Default fallback
+        }
+
+        $ratio = $width / $height;
+
+        // 1:1 (Square) - ratio = 1.0
+        if ($ratio >= 0.95 && $ratio <= 1.05) {
+            return '1:1';
+        }
+
+        // 4:5 (Portrait) - ratio = 0.8
+        if ($ratio >= 0.75 && $ratio <= 0.85) {
+            return '4:5';
+        }
+
+        // 9:16 (Vertical/Stories) - ratio = 0.5625
+        if ($ratio >= 0.5 && $ratio <= 0.6) {
+            return '9:16';
+        }
+
+        // 16:9 (Landscape/Video) - ratio = 1.778
+        if ($ratio >= 1.7 && $ratio <= 1.85) {
+            return '16:9';
+        }
+
+        // 21:9 (Ultra-wide) - ratio = 2.333
+        if ($ratio >= 2.2 && $ratio <= 2.5) {
+            return '21:9';
+        }
+
+        // Fallback logic
+        if ($ratio > 1.4) {
+            return '16:9'; // Wide content → landscape
+        } else if ($ratio < 0.7) {
+            return '9:16'; // Tall content → vertical
+        } else {
+            return '1:1'; // In-between → square
+        }
     }
 }

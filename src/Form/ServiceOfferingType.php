@@ -4,6 +4,7 @@
 namespace App\Form;
 
 use App\Entity\ServiceOffering;
+use App\Entity\User;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\IntegerType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
@@ -19,6 +20,9 @@ class ServiceOfferingType extends AbstractType
 {
     public function buildForm(FormBuilderInterface $b, array $options): void
     {
+        // Récupérer l'utilisateur actuel si passé (optionnel)
+        $currentUser = $options['current_user'] ?? null;
+        
         $b
             ->add('title', TextType::class)
             ->add('description', TextareaType::class, ['required' => false])
@@ -91,9 +95,13 @@ class ServiceOfferingType extends AbstractType
     public function configureOptions(OptionsResolver $resolver): void
     {
         $resolver->setDefaults([
-            'data_class'      => ServiceOffering::class,
-            'csrf_protection' => false,
+            'data_class'         => ServiceOffering::class,
+            'csrf_protection'    => false,
             'allow_extra_fields' => true,
+            'current_user'       => null, 
         ]);
+        
+        // ✅ AJOUT: Définir les types autorisés pour current_user
+        $resolver->setAllowedTypes('current_user', ['null', User::class]);
     }
 }

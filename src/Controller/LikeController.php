@@ -33,10 +33,11 @@ class LikeController extends AbstractController
      */
     private function tryResolveCreatorFromPostId(string $postId): ?User
     {
-        if (str_starts_with($postId, 'post_')) {
-            $candidateId = substr($postId, strlen('post_'));
+        // Checks if $postId starts with 'post_'
+        if (str_starts_with($postId, 'post_')) { 
+            $candidateId = substr($postId, strlen('post_')); 
             if (ctype_digit($candidateId)) {
-                return $this->userRepository->find((int)$candidateId);
+                return $this->userRepository->find((int)$candidateId); 
             }
         }
         return null;
@@ -46,8 +47,18 @@ class LikeController extends AbstractController
     #[IsGranted('IS_AUTHENTICATED_FULLY')]
     public function likePost(string $postId, #[CurrentUser] User $user): JsonResponse
     {
+        // Resolve the creator from postId
+        $creator = $this->tryResolveCreatorFromPostId($postId);
+        
+        if (!$creator) {
+            return $this->createApiResponse([
+                'message' => 'Invalid post ID format or user not found',
+                'postId' => $postId,
+            ], Response::HTTP_BAD_REQUEST);
+        }
 
-        $existingLike = $this->likeRepository->findByUserAndPostOrCreator($user, $postId);
+        // Check if already liked
+        $existingLike = $this->likeRepository->findByUserAndLikedUser($user, $creator);
 
         if ($existingLike) {
             return $this->createApiResponse([
@@ -56,21 +67,13 @@ class LikeController extends AbstractController
             ], Response::HTTP_OK);
         }
 
-        // if this is a creator post, set likedUser relation too (if field exists)
-        $creator = $this->tryResolveCreatorFromPostId($postId);
-        if ($creator) {
-            $like = new Like($user, $creator);
-            $like->setUser($user);
-
-            if (method_exists($like, 'setLikedUser')) {
-                $like->setLikedUser($creator);
-            }
-        }
+        // Create new like
+        $like = new Like($user, $creator);
 
         $this->em->persist($like);
         $this->em->flush();
 
-        $likesCount = $this->likeRepository->countByPostOrCreator($postId);
+        $likesCount = $this->likeRepository->countByLikedUser($creator);
 
         return $this->createApiResponse([
             'message' => 'Post liked',
@@ -83,11 +86,21 @@ class LikeController extends AbstractController
     /**
      * ✅ Unlike a post/feed item
      */
-    #[Route('/feed/{postId}/like', name: 'unlike_post', methods: ['DELETE'])]
+    #[Route('/feed/{postId}/unlike', name: 'unlike_post', methods: ['DELETE'])]
     #[IsGranted('IS_AUTHENTICATED_FULLY')]
     public function unlikePost(string $postId, #[CurrentUser] User $user): JsonResponse
     {
-        $like = $this->likeRepository->findByUserAndPostOrCreator($user, $postId);
+        // Resolve the creator from postId
+        $creator = $this->tryResolveCreatorFromPostId($postId);
+        
+        if (!$creator) {
+            return $this->createApiResponse([
+                'message' => 'Invalid post ID format or user not found',
+                'postId' => $postId,
+            ], Response::HTTP_BAD_REQUEST);
+        }
+
+        $like = $this->likeRepository->findByUserAndLikedUser($user, $creator);
 
         if (!$like) {
             return $this->createApiResponse([
@@ -99,7 +112,7 @@ class LikeController extends AbstractController
         $this->em->remove($like);
         $this->em->flush();
 
-        $likesCount = $this->likeRepository->countByPostOrCreator($postId);
+        $likesCount = $this->likeRepository->countByLikedUser($creator);
 
         return $this->createApiResponse([
             'message' => 'Post unliked',
@@ -114,7 +127,16 @@ class LikeController extends AbstractController
     #[Route('/feed/{postId}/likes/count', name: 'get_likes_count', methods: ['GET'])]
     public function getLikesCount(string $postId): JsonResponse
     {
-        $count = $this->likeRepository->countByPostOrCreator($postId);
+        $creator = $this->tryResolveCreatorFromPostId($postId);
+        
+        if (!$creator) {
+            return $this->createApiResponse([
+                'message' => 'Invalid post ID format or user not found',
+                'postId' => $postId,
+            ], Response::HTTP_BAD_REQUEST);
+        }
+
+        $count = $this->likeRepository->countByLikedUser($creator);
 
         return $this->createApiResponse([
             'postId' => $postId,
@@ -122,21 +144,6 @@ class LikeController extends AbstractController
         ]);
     }
 
-    /**
-     * ✅ Check if user has liked a post
-     */
-    #[Route('/feed/{postId}/likes/me', name: 'check_my_like', methods: ['GET'])]
-    #[IsGranted('IS_AUTHENTICATED_FULLY')]
-    public function checkMyLike(string $postId, #[CurrentUser] User $user): JsonResponse
-    {
-        $like = $this->likeRepository->findByUserAndPostOrCreator($user, $postId);
-
-        return $this->createApiResponse([
-            'postId' => $postId,
-            'isLiked' => $like !== null,
-            'likeId' => $like?->getId(),
-        ]);
-    }
     /**
      * ✅ Get all posts liked by current user
      */

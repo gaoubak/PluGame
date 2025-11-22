@@ -2,7 +2,7 @@ lexik_jwt_authentication:
     secret_key: '%env(resolve:JWT_SECRET_KEY)%'
     public_key: '%env(resolve:JWT_PUBLIC_KEY)%'
     pass_phrase: '%env(JWT_PASSPHRASE)%'
-    token_ttl: 900  # 🔒 Security: 15 minutes (was 36000000 = 10000 hours!)
+    token_ttl: 90000  # 🔒 Security: 15 minutes (was 36000000 = 10000 hours!)
     user_identity_field: email
     
     

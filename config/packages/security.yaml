@@ -47,6 +47,7 @@ security:
         - { path: ^/api/login, roles: PUBLIC_ACCESS  }
         - { path: ^/api/token/refresh, roles: PUBLIC_ACCESS  }  # 🔒 Allow refresh token endpoint
         - { path: ^/api/doc, roles: PUBLIC_ACCESS  }
+        - { path: ^/api/creators, roles: PUBLIC_ACCESS  }  # 🌐 Public creator listing
         - { path: ^/api,       roles: IS_AUTHENTICATED_FULLY }
 
 when@test:

@@ -44,11 +44,11 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column(type: 'integer')]
-    #[Groups(['user:read','conversation:read','booking:read','creator:feed', 'conversation:write','get_message', 'message:read','service:read'])]
+    #[Groups(['user:read','conversation:read','booking:read','creator:feed', 'conversation:write','get_message', 'message:read','service:read','comment:read'])]
     private ?int $id = null;
 
     #[ORM\Column(type: 'string', length: 150, unique: true)]
-    #[Groups(['user:read','conversation:read','booking:read','creator:feed', 'conversation:write','get_message','message:read'])]
+    #[Groups(['user:read','conversation:read','booking:read','creator:feed', 'conversation:write','get_message','message:read','comment:read'])]
     private ?string $username = null;
 
     #[ORM\Column(type: 'string', length: 180, unique: true)]
@@ -67,7 +67,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     // existing fields
     #[ORM\Column(type: 'string', length: 255, nullable: true)]
-    #[Groups(['user:read','creator:feed','conversation:write', 'conversation:read','get_message', 'message:read'])]
+    #[Groups(['user:read','creator:feed','conversation:write', 'conversation:read','get_message', 'message:read','comment:read'])]
     private ?string $userPhoto = null;
 
     #[ORM\Column(type: 'boolean', options: ['default' => false])]
@@ -215,7 +215,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     #[ORM\Column(type: 'json', nullable: true)]
     #[Groups(['user:read'])]
-    private ?array $stripePaymentMethods = null;
+    private ?string $stripePaymentMethods = null;
 
     #[ORM\Column(type: 'string', length: 255, nullable: true)]
     private ?string $stripeAccountId = null;
@@ -235,10 +235,15 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private Collection $likes;
 
     #[ORM\OneToMany(mappedBy: 'user', targetEntity: Comment::class, cascade: ['remove'])]
+    #[Groups(['comment:read'])]
     private Collection $comment;
 
     #[ORM\OneToMany(mappedBy: 'user', targetEntity: CommentLike::class, cascade: ['remove'])]
     private Collection $commentLikes;
+
+    // OAuth providers
+    #[ORM\OneToMany(mappedBy: 'user', targetEntity: OAuthProvider::class, cascade: ['persist', 'remove'], orphanRemoval: true)]
+    private Collection $oauthProviders;
 
     // updatedAt for Vich
     #[ORM\Column(type: 'datetime', nullable: true)]
@@ -266,7 +271,8 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $this->bookmarkedBy            = new ArrayCollection();
         $this->likes                   = new ArrayCollection();
         $this->commentLikes            = new ArrayCollection();
-        $this->comment            = new ArrayCollection();
+        $this->comment                 = new ArrayCollection();
+        $this->oauthProviders          = new ArrayCollection();
     }
 
     // ===== Security interface =====
@@ -474,7 +480,8 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     public function getAvatarUrl(): ?string
     {
-        return $this->avatarUrl;
+        // Priority: userPhoto first, then fallback to avatarUrl
+        return $this->userPhoto ?? $this->avatarUrl;
     }
 
     public function setAvatarUrl(?string $avatarUrl): self
@@ -485,7 +492,8 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     public function getCoverUrl(): ?string
     {
-        return $this->coverUrl;
+        // Priority: coverPhoto first, then fallback to coverUrl
+        return $this->coverPhoto ?? $this->coverUrl;
     }
 
     public function setCoverUrl(?string $coverUrl): self
@@ -732,12 +740,12 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    public function getStripePaymentMethods(): ?array
+    public function getStripePaymentMethods(): ?string
     {
         return $this->stripePaymentMethods;
     }
 
-    public function setStripePaymentMethods(?array $stripePaymentMethods): self
+    public function setStripePaymentMethods(?string $stripePaymentMethods): self
     {
         $this->stripePaymentMethods = $stripePaymentMethods;
         return $this;
@@ -858,11 +866,30 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     }
 
     /**
-     * @return Collection<int, CommentLike>
+     * @return Collection<int, Comment>
      */
-    public function getComment(): Collection
+    public function getComments(): Collection
     {
         return $this->comment;
+    }
+
+    public function addComment(Comment $comment): self
+    {
+        if (!$this->comment->contains($comment)) {
+            $this->comment[] = $comment;
+            $comment->setPost($this);
+        }
+        return $this;
+    }
+
+    public function removeComment(Comment $comment): self
+    {
+        if ($this->comment->removeElement($comment)) {
+            if ($comment->getPost() === $this) {
+                $comment->setPost(null);
+            }
+        }
+        return $this;
     }
 
     /**
@@ -871,5 +898,61 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function getLikes(): Collection
     {
         return $this->likes;
+    }
+
+    /**
+     * @return Collection<int, OAuthProvider>
+     */
+    public function getOauthProviders(): Collection
+    {
+        return $this->oauthProviders;
+    }
+
+    public function addOauthProvider(OAuthProvider $oauthProvider): self
+    {
+        if (!$this->oauthProviders->contains($oauthProvider)) {
+            $this->oauthProviders[] = $oauthProvider;
+            $oauthProvider->setUser($this);
+        }
+
+        return $this;
+    }
+
+    public function removeOauthProvider(OAuthProvider $oauthProvider): self
+    {
+        if ($this->oauthProviders->removeElement($oauthProvider)) {
+            // set the owning side to null (unless already changed)
+            if ($oauthProvider->getUser() === $this) {
+                $oauthProvider->setUser(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * Check if user has a specific OAuth provider linked
+     */
+    public function hasOAuthProvider(string $provider): bool
+    {
+        foreach ($this->oauthProviders as $oauthProvider) {
+            if ($oauthProvider->getProvider() === $provider) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Get OAuth provider by name (google, apple, etc.)
+     */
+    public function getOAuthProvider(string $provider): ?OAuthProvider
+    {
+        foreach ($this->oauthProviders as $oauthProvider) {
+            if ($oauthProvider->getProvider() === $provider) {
+                return $oauthProvider;
+            }
+        }
+        return null;
     }
 }

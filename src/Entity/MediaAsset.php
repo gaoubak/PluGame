@@ -81,6 +81,10 @@ class MediaAsset
     #[Groups(['media:read', 'user:read'])]
     private ?int $durationSec = null;
 
+    #[ORM\Column(length: 10, options: ['default' => '1:1'])]
+    #[Groups(['media:read', 'user:read'])]
+    private string $aspectRatio = '1:1';
+
     #[ORM\Column(length: 2048, nullable: true)]
     #[Groups(['media:read', 'user:read'])]
     private ?string $thumbnailUrl = null;
@@ -224,6 +228,16 @@ class MediaAsset
     public function setDurationSec(?int $s): self
     {
         $this->durationSec = $s;
+        return $this;
+    }
+
+    public function getAspectRatio(): string
+    {
+        return $this->aspectRatio;
+    }
+    public function setAspectRatio(string $ratio): self
+    {
+        $this->aspectRatio = $ratio;
         return $this;
     }
 

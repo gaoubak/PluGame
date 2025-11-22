@@ -90,11 +90,7 @@ class PromoCode
     #[ORM\Column(type: 'integer', nullable: true)]
     private ?int $minAmount = null;
 
-    public function getId(): ?string
-    {
-        return $this->id;
-    }
-
+   
     public function getCode(): string
     {
         return $this->code;
@@ -261,6 +257,38 @@ class PromoCode
         }
 
         return true;
+    }
+
+    /**
+     * Validate promo code with detailed error messages
+     *
+     * @param int $amount Amount in cents
+     * @param User|null $user User attempting to use the code
+     * @return array ['valid' => bool, 'message' => string]
+     */
+    public function validate(int $amount, ?User $user = null): array
+    {
+        if (!$this->isActive) {
+            return ['valid' => false, 'message' => 'This promo code is not active'];
+        }
+
+        if ($this->expiresAt && $this->expiresAt < new \DateTimeImmutable()) {
+            return ['valid' => false, 'message' => 'This promo code has expired'];
+        }
+
+        if ($this->maxUses && $this->usedCount >= $this->maxUses) {
+            return ['valid' => false, 'message' => 'This promo code has reached its maximum number of uses'];
+        }
+
+        if ($this->minAmount && $amount < $this->minAmount) {
+            $minAmountFormatted = number_format($this->minAmount / 100, 2);
+            return ['valid' => false, 'message' => "Minimum order amount of €{$minAmountFormatted} required"];
+        }
+
+        // TODO: Check maxUsesPerUser if we track per-user usage
+        // For now, we can't validate this without additional tracking
+
+        return ['valid' => true, 'message' => 'Promo code is valid'];
     }
 
     /**

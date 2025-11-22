@@ -63,6 +63,17 @@ class PaymentMethodController extends AbstractController
                 $card['isDefault'] = $customer->invoice_settings->default_payment_method === $pm->id;
                 return $card;
             }, $paymentMethods);
+            $defaultPaymentMethodId = null;
+
+            foreach ($data as $pm) {
+                if ($pm['isDefault']) {
+                    $defaultPaymentMethodId = $pm['id'];
+                    break;
+                }
+            }
+            $user->setStripePaymentMethods($defaultPaymentMethodId);
+            $this->em->persist($user);
+            $this->em->flush();
 
             return $this->createApiResponse($data);
         } catch (\Exception $e) {

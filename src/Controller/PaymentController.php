@@ -7,8 +7,12 @@ namespace App\Controller;
 use App\Entity\Payment;
 use App\Entity\User;
 use App\Entity\Booking;
+use App\Entity\PromoCode;
+use App\Entity\GiftCard;
 use App\Repository\PaymentRepository;
 use App\Repository\BookingRepository;
+use App\Repository\PromoCodeRepository;
+use App\Repository\GiftCardRepository;
 use App\Service\Stripe\StripeService;
 use App\Service\WalletService;
 use App\Service\MercurePublisher;
@@ -33,6 +37,8 @@ class PaymentController extends AbstractController
     public function __construct(
         private readonly PaymentRepository $paymentRepository,
         private readonly BookingRepository $bookingRepository,
+        private readonly PromoCodeRepository $promoCodeRepository,
+        private readonly GiftCardRepository $giftCardRepository,
         private readonly StripeService $stripeService,
         private readonly WalletService $walletService,
         private readonly EntityManagerInterface $em,
@@ -55,6 +61,10 @@ class PaymentController extends AbstractController
         $bookingId = $data['bookingId'] ?? null;
         $useWallet = $data['useWallet'] ?? false;
         $isDeposit = $data['isDeposit'] ?? false;
+        $promoCode = $data['promoCode'] ?? null;  // NEW: Promo code
+        $giftCardCode = $data['giftCardCode'] ?? null;  // NEW: Gift card code
+        $paymentMethodId = $user->getStripePaymentMethods() ?? ($data['paymentMethod'] ?? null);
+
 
         if (!$amountCents || $amountCents <= 0) {
             return $this->errorResponse('Invalid amount', Response::HTTP_BAD_REQUEST);
@@ -70,11 +80,62 @@ class PaymentController extends AbstractController
             }
 
             // Calculate deposit if applicable
+            $originalAmount = $amountCents;
             $finalAmount = $amountCents;
             if ($isDeposit && $booking) {
                 $finalAmount = (int) ($amountCents * (self::DEPOSIT_PERCENTAGE / 100));
                 $booking->setDepositAmountCents($finalAmount);
                 $booking->setRemainingAmountCents($amountCents - $finalAmount);
+            }
+
+            // NEW: Apply promo code discount
+            $promoCodeEntity = null;
+            $promoCodeDiscount = 0;
+            if ($promoCode && $booking) {
+                $promoCodeEntity = $this->promoCodeRepository->findActiveByCode($promoCode);
+
+                if (!$promoCodeEntity) {
+                    return $this->errorResponse('Invalid or expired promo code', Response::HTTP_BAD_REQUEST);
+                }
+
+                // Verify promo code belongs to the creator
+                if ($promoCodeEntity->getCreator()->getId() !== $booking->getCreator()->getId()) {
+                    return $this->errorResponse('This promo code is not valid for this creator', Response::HTTP_BAD_REQUEST);
+                }
+
+                // Validate promo code
+                $validation = $promoCodeEntity->validate($finalAmount, $user);
+                if (!$validation['valid']) {
+                    return $this->errorResponse($validation['message'], Response::HTTP_BAD_REQUEST);
+                }
+
+                // Calculate discount
+                $promoCodeDiscount = $promoCodeEntity->calculateDiscount($finalAmount);
+                $finalAmount -= $promoCodeDiscount;
+            }
+
+            // NEW: Apply gift card
+            $giftCardEntity = null;
+            $giftCardAmount = 0;
+            if ($giftCardCode) {
+                $giftCardEntity = $this->giftCardRepository->findActiveByCode($giftCardCode);
+
+                if (!$giftCardEntity) {
+                    return $this->errorResponse('Invalid or expired gift card', Response::HTTP_BAD_REQUEST);
+                }
+
+                if (!$giftCardEntity->isValid()) {
+                    return $this->errorResponse('Gift card is expired or has no balance', Response::HTTP_BAD_REQUEST);
+                }
+
+                // Deduct from gift card (up to remaining amount)
+                $giftCardAmount = $giftCardEntity->deduct($finalAmount);
+                $finalAmount -= $giftCardAmount;
+
+                // Mark as redeemed if first use
+                if (!$giftCardEntity->getRedeemedBy()) {
+                    $giftCardEntity->redeem($user);
+                }
             }
 
             // Check wallet balance
@@ -92,22 +153,40 @@ class PaymentController extends AbstractController
                     $user,
                     $remainingAmount,
                     'eur',
-                    $booking
+                    $booking,
+                    [],
+                    $paymentMethodId
                 );
 
                 $payment = new Payment();
                 $payment->setUser($user);
                 $payment->setBooking($booking);
-                $payment->setAmountCents($finalAmount);
+                $payment->setOriginalAmountCents($originalAmount);  // NEW: Store original amount
+                $payment->setAmountCents($finalAmount);  // Final amount after discounts
                 $payment->setCurrency('EUR');
                 $payment->setStatus(Payment::STATUS_PENDING);
                 $payment->setPaymentGateway('stripe');
                 $payment->setStripePaymentIntentId($paymentIntent->id);
+
+                // NEW: Link promo code and gift card
+                if ($promoCodeEntity) {
+                    $payment->setPromoCode($promoCodeEntity);
+                    $payment->setDiscountAmountCents($promoCodeDiscount);
+                    $promoCodeEntity->incrementUsedCount();  // Track usage
+                }
+
+                if ($giftCardEntity) {
+                    $payment->setGiftCard($giftCardEntity);
+                    $payment->setGiftCardAmountCents($giftCardAmount);
+                }
+
                 $payment->setMetadata([
                     'wallet_used' => $useWallet ? ($finalAmount - $remainingAmount) : 0,
                     'card_charged' => $remainingAmount,
                     'is_deposit' => $isDeposit,
                     'deposit_percentage' => $isDeposit ? self::DEPOSIT_PERCENTAGE : null,
+                    'promo_code_discount' => $promoCodeDiscount,
+                    'gift_card_amount' => $giftCardAmount,
                 ]);
 
                 $this->em->persist($payment);
@@ -117,24 +196,46 @@ class PaymentController extends AbstractController
                     'paymentIntentId' => $paymentIntent->id,
                     'clientSecret' => $paymentIntent->client_secret,
                     'paymentId' => $payment->getId(),
+                    'originalAmount' => $originalAmount / 100,  // NEW
+                    'promoCodeDiscount' => $promoCodeDiscount / 100,  // NEW
+                    'giftCardAmount' => $giftCardAmount / 100,  // NEW
+                    'totalDiscount' => ($promoCodeDiscount + $giftCardAmount) / 100,  // NEW
+                    'finalAmount' => $finalAmount / 100,  // NEW
                     'walletUsed' => $useWallet ? ($finalAmount - $remainingAmount) : 0,
-                    'cardCharge' => $remainingAmount,
+                    'cardCharge' => $remainingAmount / 100,
                     'isDeposit' => $isDeposit,
                     'depositAmount' => $isDeposit ? $finalAmount / 100 : null,
                     'remainingAmount' => $isDeposit ? ($amountCents - $finalAmount) / 100 : null,
                 ], Response::HTTP_CREATED);
             } else {
-                // Full wallet payment
+                // Full wallet payment (or fully covered by discounts)
                 $payment = new Payment();
                 $payment->setUser($user);
                 $payment->setBooking($booking);
-                $payment->setAmountCents($finalAmount);
+                $payment->setOriginalAmountCents($originalAmount);  // NEW
+                $payment->setAmountCents(max(0, $finalAmount));  // Final amount (might be 0 if fully discounted)
                 $payment->setCurrency('EUR');
                 $payment->setStatus(Payment::STATUS_COMPLETED);
-                $payment->setPaymentMethod('wallet');
-                $payment->setPaymentGateway('wallet');
+                $payment->setPaymentMethod($finalAmount > 0 ? 'wallet' : 'discount');  // NEW
+                $payment->setPaymentGateway($finalAmount > 0 ? 'wallet' : 'discount');  // NEW
+
+                // NEW: Link promo code and gift card
+                if ($promoCodeEntity) {
+                    $payment->setPromoCode($promoCodeEntity);
+                    $payment->setDiscountAmountCents($promoCodeDiscount);
+                    $promoCodeEntity->incrementUsedCount();
+                }
+
+                if ($giftCardEntity) {
+                    $payment->setGiftCard($giftCardEntity);
+                    $payment->setGiftCardAmountCents($giftCardAmount);
+                }
+
                 $payment->setMetadata([
                     'is_deposit' => $isDeposit,
+                    'promo_code_discount' => $promoCodeDiscount,
+                    'gift_card_amount' => $giftCardAmount,
+                    'wallet_used' => $finalAmount,
                 ]);
 
                 $this->em->persist($payment);
@@ -151,9 +252,14 @@ class PaymentController extends AbstractController
 
                 return $this->createApiResponse([
                     'paymentId' => $payment->getId(),
-                    'walletUsed' => $finalAmount,
+                    'originalAmount' => $originalAmount / 100,  // NEW
+                    'promoCodeDiscount' => $promoCodeDiscount / 100,  // NEW
+                    'giftCardAmount' => $giftCardAmount / 100,  // NEW
+                    'totalDiscount' => ($promoCodeDiscount + $giftCardAmount) / 100,  // NEW
+                    'finalAmount' => $finalAmount / 100,  // NEW
+                    'walletUsed' => $finalAmount / 100,
                     'cardCharge' => 0,
-                    'message' => 'Paid with wallet',
+                    'message' => $finalAmount > 0 ? 'Paid with wallet' : 'Fully covered by discounts',  // NEW
                     'isDeposit' => $isDeposit,
                 ], Response::HTTP_CREATED);
             }
@@ -213,6 +319,7 @@ class PaymentController extends AbstractController
         $remainingAmountCents = $booking->getRemainingAmountCents();
         $data = json_decode($request->getContent(), true);
         $useWallet = $data['useWallet'] ?? false;
+        $paymentMethodId =  $data['paymentMethod'] ?? null;
 
         try {
             // Check wallet balance
@@ -230,7 +337,9 @@ class PaymentController extends AbstractController
                     $user,
                     $cardCharge,
                     $booking->getCurrency() ?? 'eur',
-                    $booking
+                    $booking,
+                    [],
+                    $paymentMethodId
                 );
 
                 $payment = new Payment();
@@ -394,6 +503,118 @@ class PaymentController extends AbstractController
             return $this->errorResponse(
                 'Webhook error: ' . $e->getMessage(),
                 Response::HTTP_BAD_REQUEST
+            );
+        }
+    }
+
+    #[Route('/payment-methods/confirm-setup', name: 'confirm_setup_intent', methods: ['POST'])]
+    public function confirmSetupIntent(Request $request): Response
+    {
+        $data = json_decode($request->getContent(), true);
+        $setupIntentId = $data['setupIntentId'] ?? null;
+        
+        if (!$setupIntentId) {
+            return $this->json(['error' => 'Missing setupIntentId'], 400);
+        }
+        
+        try {
+            // Retrieve SetupIntent from Stripe
+            $setupIntent = $this->stripeService->retrieveSetupIntent($setupIntentId);
+            
+            if ($setupIntent->status !== 'succeeded') {
+                return $this->json([
+                    'error' => 'SetupIntent not confirmed',
+                    'status' => $setupIntent->status
+                ], 400);
+            }
+            
+            return $this->json([
+                'data' => [
+                    'setupIntent' => $setupIntent->id,
+                    'paymentMethodId' => $setupIntent->payment_method,
+                    'status' => $setupIntent->status,
+                ]
+            ]);
+            
+        } catch (\Exception $e) {
+            return $this->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * ✅ Confirm an existing Payment Intent using a saved Payment Method ID
+     * POST /api/payments/confirm
+     */
+    #[Route('/confirm', name: 'confirm_payment_intent', methods: ['POST'])]
+    public function confirmPaymentIntent(
+        Request $request,
+        #[CurrentUser] User $user
+    ): JsonResponse {
+        $data = json_decode($request->getContent(), true);
+
+        $paymentIntentId = $data['paymentIntentId'] ?? null;
+        $paymentMethodId = $data['paymentMethodId'] ?? null;
+
+        if (!$paymentIntentId || !$paymentMethodId) {
+            return $this->errorResponse('Missing paymentIntentId or paymentMethodId', Response::HTTP_BAD_REQUEST);
+        }
+
+        try {
+            // 1. Retrieve the Payment entity associated with the Intent ID
+            $payment = $this->paymentRepository->findOneBy([
+                'stripePaymentIntentId' => $paymentIntentId,
+                'user' => $user, // Security check
+            ]);
+
+            if (!$payment) {
+                return $this->errorResponse('Payment Intent not found or unauthorized', Response::HTTP_NOT_FOUND);
+            }
+
+            // 2. Call Stripe Service to confirm the Payment Intent
+            // This is where 3D Secure handling might be initiated if required
+            $paymentIntent = $this->stripeService->confirmPaymentIntent(
+                $paymentIntentId, 
+                $paymentMethodId
+            );
+
+            // 3. Update Payment entity status based on the result
+            if ($paymentIntent->status === 'requires_action' || $paymentIntent->status === 'requires_source_action') {
+                $payment->setStatus(Payment::STATUS_REQUIRES_ACTION);
+                $this->em->flush();
+                
+                // Return status to mobile app so it can handle 3D Secure authentication
+                return $this->createApiResponse([
+                    'status' => 'requires_action',
+                    'paymentIntentId' => $paymentIntent->id,
+                    'clientSecret' => $paymentIntent->client_secret,
+                ], Response::HTTP_OK);
+                
+            } elseif ($paymentIntent->status === 'succeeded') {
+                // If the payment succeeded immediately (e.g., no 3D secure needed)
+                // The webhook handler will take care of final completion, but we can return success now.
+                // Call the success handler directly to ensure immediate booking status update
+                $this->handlePaymentIntentSucceeded($paymentIntent);
+
+                return $this->createApiResponse([
+                    'status' => 'succeeded',
+                    'paymentIntentId' => $paymentIntent->id,
+                ], Response::HTTP_OK);
+
+            } else {
+                // Other statuses (requires_payment_method, failed)
+                $payment->setStatus(Payment::STATUS_FAILED);
+                $this->em->flush();
+
+                return $this->errorResponse(
+                    'Payment failed or requires action: ' . $paymentIntent->last_payment_error->message ?? 'Unknown error',
+                    Response::HTTP_BAD_REQUEST
+                );
+            }
+
+        } catch (\Exception $e) {
+            return $this->errorResponse(
+                'Failed to confirm payment: ' . $e->getMessage(),
+                Response::HTTP_INTERNAL_SERVER_ERROR
             );
         }
     }

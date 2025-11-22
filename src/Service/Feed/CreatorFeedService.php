@@ -5,6 +5,7 @@ namespace App\Service\Feed;
 use App\Entity\MediaAsset;
 use App\Entity\User;
 use App\Entity\CreatorProfile;
+use App\Entity\ServiceOffering; // <-- ADDED: Necessary for type hinting in getFeaturedService
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Contracts\Cache\CacheInterface;
 use Psr\Log\LoggerInterface;
@@ -36,13 +37,18 @@ class CreatorFeedService
         );
 
         try {
-            return $this->cache->get($cacheKey, function () use ($viewer, $filters) {
-                return $this->buildFeed($viewer, $filters);
-            }, self::CACHE_TTL);
+            // Temporarily bypass cache for debugging
+            $result = $this->buildFeed($viewer, $filters);
+            $this->logger->info('Feed built successfully', [
+                'viewer_id' => $viewer->getId(),
+                'total' => $result['total'] ?? 0
+            ]);
+            return $result;
         } catch (\Exception $e) {
             $this->logger->error('Failed to generate creator feed', [
                 'viewer_id' => $viewer->getId(),
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
             ]);
 
             return $this->emptyFeed($filters['page'], $filters['limit']);
@@ -55,15 +61,20 @@ class CreatorFeedService
         $maxMediaPerCreator = $filters['maxMedia'] ?? self::MAX_MEDIA_PER_CREATOR;
         // Query data
         $media = $this->queryMedia($filters);
-        //dump("media :",$media);
+        $this->logger->info('Media queried', ['count' => count($media)]);
+
         $profiles = $this->queryProfiles($filters);
+        $this->logger->info('Profiles queried', ['count' => count($profiles)]);
+
+        $userIds = array_map(fn($cp) => $cp->getUser()->getId(), $profiles);
+        $likesAndCommentsCounts = $this->getLikesAndCommentsCountsByUserIds($userIds);
         // Get user's blocked creators
         $blockedCreatorIds = $this->getBlockedCreatorIds($viewer);
         // Group medias per creator
         $mediasByCreator = $this->groupMediaByCreator($media, $maxMediaPerCreator);
         // Get user's booking history for loyalty boost
         $bookedCreatorIds = $this->getBookedCreatorIds($viewer);
-
+        $featured = $this->getFeaturedService($userIds); 
         // Build and score cards
         $cards = [];
         foreach ($profiles as $cp) {
@@ -93,6 +104,10 @@ class CreatorFeedService
                    + $loyaltyBoost
                    + $this->jitter();
 
+            $likesCount = $likesAndCommentsCounts[$uid]['likes'] ?? 0;
+            $commentsCount = $likesAndCommentsCounts[$uid]['comments'] ?? 0;
+            $service = $featured[$uid] ?? null;
+
             $cards[] = [
                 'score' => $score,
                 'creatorProfile' => [
@@ -103,11 +118,23 @@ class CreatorFeedService
                     'ratingsCount' => $cp->getRatingsCount(),
                     'specialties' => $cp->getSpecialties() ?? [],
                     'medias'      => $mediasByCreator[$uid] ?? [],
+                    'likesCount'  => $likesCount,
+                    'commentsCount' => $commentsCount,
                     'user'        => [
                         'id' => $u->getId(),
                         'username' => $u->getUsername(),
+                        'fullName' => $u->getFullName(),
                         'userPhoto' => $u->getUserPhoto(),
-                    ]
+                        'isVerified' => $u->isVerified(),
+                    ],
+                    'listing' => $service ? [
+                        'id'       => (string)$service->getId(),
+                        'title'    => $service->getTitle(),
+                        'price'    => $service->getPriceCents(),
+                        'currency' => $service->getCurrency(),
+                        'includes' => $service->getIncludes(),
+                        'kind'     => $service->getKind(),
+                    ] : null,
                 ]
             ];
         }
@@ -165,10 +192,15 @@ class CreatorFeedService
 
     private function queryProfiles(array $filters): array
     {
-        $profiles = $this->em->getRepository(CreatorProfile::class)->findAll();
-        //$profiles = $this->applyFilters($profiles, $filters, 'cp') ?? [];
+        $qb = $this->em->createQueryBuilder()
+            ->select('cp', 'u')
+            ->from(CreatorProfile::class, 'cp')
+            ->join('cp.user', 'u')
+            ->setMaxResults(self::MAX_RESULTS);
 
-        return (array) $profiles;
+        $this->applyFilters($qb, $filters, 'cp');
+
+        return $qb->getQuery()->getResult();
     }
 
 
@@ -212,6 +244,9 @@ class CreatorFeedService
                     'url'          => $m->getPublicUrl() ?: '',
                     'thumbnailUrl' => $m->getThumbnailUrl(),
                     'caption'      => $m->getCaption(),
+                    'aspectRatio'  => $m->getAspectRatio(),
+                    'width'        => $m->getWidth(),
+                    'height'       => $m->getHeight(),
                     'createdAt'    => $m->getCreatedAt()?->format(\DATE_ATOM),
                 ];
             }
@@ -312,4 +347,104 @@ class CreatorFeedService
             'results'  => [],
         ];
     }
+
+    private function getLikesAndCommentsCountsByUserIds(array $userIds): array
+    {
+        if (empty($userIds)) {
+            return [];
+        }
+
+        // Initialize counts for all creators to 0
+        $counts = [];
+        foreach ($userIds as $userId) {
+            $counts[$userId] = [
+                'likes' => 0,
+                'comments' => 0,
+            ];
+        }
+
+        try {
+            // Requête pour les likes (Counting likes authored by the user)
+            $likesQuery = $this->em->createQuery('
+                SELECT IDENTITY(l.user) as user_id, COUNT(l.id) as likes_count
+                FROM App\Entity\Like l
+                WHERE l.user IN (:userIds)
+                GROUP BY l.user
+            ')->setParameter('userIds', $userIds);
+            
+            $likesResults = $likesQuery->getResult();
+            
+            // Requête pour les commentaires (Counting comments received by the post/profile owner)
+            $commentsQuery = $this->em->createQuery('
+                SELECT IDENTITY(c.post) as post_id, COUNT(c.id) as comments_count
+                FROM App\Entity\Comment c
+                WHERE c.post IN (:postUserIds)
+                GROUP BY c.post
+            ')
+            ->setParameter('postUserIds', $userIds);
+           
+            $commentsResults = $commentsQuery->getResult();
+
+            // Populate counts
+            foreach ($likesResults as $row) {
+                $uid = $row['user_id'];
+                // Defensive check to ensure the ID is one we are tracking
+                if (array_key_exists($uid, $counts)) {
+                    $counts[$uid]['likes'] = (int) $row['likes_count'];
+                } else {
+                    $this->logger->warning('Like count result contained unexpected user ID', ['user_id' => $uid]);
+                }
+            }
+            
+            foreach ($commentsResults as $row) {
+                $uid = $row['post_id'];
+                // Defensive check to ensure the ID is one we are tracking
+                if (array_key_exists($uid, $counts)) {
+                    $counts[$uid]['comments'] = (int) $row['comments_count'];
+                } else {
+                    $this->logger->warning('Comment count result contained unexpected post ID', ['post_id' => $uid]);
+                }
+            }
+            
+        } catch (\Exception $e) {
+            // FIX: Log the error and return the initialized array (all zeros) instead of crashing.
+            // This prevents the entire buildFeed from failing and returning an empty feed.
+            $this->logger->error('Failed to retrieve likes/comments counts', [
+                'error' => $e->getMessage(),
+                'user_ids' => $userIds,
+            ]);
+            // Return the initial array of zeros, preserving the feed structure.
+            return $counts;
+        }
+        
+        return $counts;
+    }
+
+    private function getFeaturedService(array $userIds): array
+    {
+        if (empty($userIds)) {
+            return [];
+        }
+
+        $qb = $this->em->createQueryBuilder()
+            ->select('s', 'u')
+            ->from('App\Entity\ServiceOffering', 's')
+            ->join('s.creator', 'u')
+            ->where('u.id IN (:ids)')
+            ->andWhere('s.featured = true')
+            ->setParameter('ids', $userIds);
+
+        /** @var ServiceOffering[] $results */
+        $results = $qb->getQuery()->getResult();
+
+        $featuredMap = [];
+
+        foreach ($results as $service) {
+            $creatorId = $service->getCreator()->getId();
+            $featuredMap[$creatorId] = $service;
+        }
+
+        return $featuredMap;
+    }
+
 }

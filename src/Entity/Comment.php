@@ -37,6 +37,7 @@ class Comment
 
     #[ORM\ManyToOne(targetEntity: Comment::class, inversedBy: 'replies')]
     #[ORM\JoinColumn(nullable: true, onDelete: 'CASCADE')]
+    #[Groups(['comment:read'])]
     private ?Comment $parentComment = null;
 
     #[ORM\OneToMany(mappedBy: 'parentComment', targetEntity: Comment::class, cascade: ['remove'])]

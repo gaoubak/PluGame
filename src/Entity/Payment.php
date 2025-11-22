@@ -20,6 +20,7 @@ class Payment
     public const STATUS_COMPLETED = 'COMPLETED';
     public const STATUS_FAILED = 'FAILED';
     public const STATUS_REFUNDED = 'REFUNDED';
+    public const STATUS_REQUIRES_ACTION = 'STATUS_REQUIRES_ACTION';
 
     #[ORM\ManyToOne(targetEntity: User::class)]
     #[ORM\JoinColumn(name: 'user_id', referencedColumnName: 'id', nullable: false, onDelete: 'CASCADE')]
@@ -86,6 +87,21 @@ class Payment
     #[ORM\Column(type: 'integer', nullable: true)]
     #[Groups(['payment:read'])]
     private ?int $discountAmountCents = null;
+
+    /**
+     * Gift card used for this payment
+     */
+    #[ORM\ManyToOne(targetEntity: GiftCard::class)]
+    #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
+    #[Groups(['payment:read'])]
+    private ?GiftCard $giftCard = null;
+
+    /**
+     * Amount paid using gift card (in cents)
+     */
+    #[ORM\Column(type: 'integer', nullable: true)]
+    #[Groups(['payment:read'])]
+    private ?int $giftCardAmountCents = null;
 
     public function getUser(): ?User
     {
@@ -280,5 +296,44 @@ class Payment
         }
 
         return ($this->discountAmountCents / $this->originalAmountCents) * 100;
+    }
+
+    public function getGiftCard(): ?GiftCard
+    {
+        return $this->giftCard;
+    }
+
+    public function setGiftCard(?GiftCard $giftCard): self
+    {
+        $this->giftCard = $giftCard;
+        return $this;
+    }
+
+    public function getGiftCardAmountCents(): ?int
+    {
+        return $this->giftCardAmountCents;
+    }
+
+    public function setGiftCardAmountCents(?int $giftCardAmountCents): self
+    {
+        $this->giftCardAmountCents = $giftCardAmountCents;
+        return $this;
+    }
+
+    /**
+     * Check if this payment used a gift card
+     */
+    public function hasGiftCard(): bool
+    {
+        return $this->giftCard !== null;
+    }
+
+    /**
+     * Get total discount (promo code + gift card)
+     */
+    #[Groups(['payment:read'])]
+    public function getTotalDiscountCents(): int
+    {
+        return ($this->discountAmountCents ?? 0) + ($this->giftCardAmountCents ?? 0);
     }
 }

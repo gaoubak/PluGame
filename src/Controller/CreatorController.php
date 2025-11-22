@@ -81,8 +81,13 @@ class CreatorController extends AbstractController
                 $qb->orderBy('u.fullName', 'ASC');
         }
 
+        // Count total results - use DISTINCT to handle GROUP BY in rating queries
         $totalQb = clone $qb;
-        $total = (int) $totalQb->select('COUNT(u.id)')->resetDQLPart('orderBy')->getQuery()->getSingleScalarResult();
+        $total = (int) $totalQb->select('COUNT(DISTINCT u.id)')
+            ->resetDQLPart('orderBy')
+            ->resetDQLPart('groupBy')
+            ->getQuery()
+            ->getSingleScalarResult();
 
         $items = $qb->setFirstResult($offset)->setMaxResults($limit)->getQuery()->getResult();
 

@@ -25,7 +25,6 @@ class MercurePublisher
     {
         $conversation = $message->getConversation();
         $sender = $message->getSender();
-
         // Publish to both participants
         $topics = [];
 
@@ -36,6 +35,8 @@ class MercurePublisher
         if ($conversation->getCreator()) {
             $topics[] = "https://plugame.app/users/{$conversation->getCreator()->getId()}/messages";
         }
+
+        dump($topics);
 
         $data = [
             'type' => 'message.new',

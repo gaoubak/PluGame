@@ -81,12 +81,23 @@ class ServiceOfferingController extends AbstractFOSRestController
             ], Response::HTTP_BAD_REQUEST);
         }
 
+        if ($service->isFeatured()) {
+            $existingFeatured = $this->em->getRepository(ServiceOffering::class)
+                ->findOneBy(['creator' => $user, 'featured' => true]);
+
+            if ($existingFeatured) {
+                return $this->createApiResponse([
+                    'message' => 'You already have a featured service. Only one featured service is allowed.'
+                ], Response::HTTP_BAD_REQUEST);
+            }
+        }
+
         $service->setCreator($user);
         $this->em->persist($service);
         $this->em->flush();
 
         // Create/refresh Stripe Product + Price (TOTAL after fee & tax)
-       // $this->stripeService->syncServicePrice($service, false); // buyerIsPlugPlus=false for catalog
+        $this->stripeService->syncServicePrice($service, false); // buyerIsPlugPlus=false for catalog
 
         $data = $this->serializer->normalize($service, null, ['groups' => ['service:read']]);
         return $this->createApiResponse($data, Response::HTTP_CREATED);
@@ -112,6 +123,19 @@ class ServiceOfferingController extends AbstractFOSRestController
         if (!$form->isValid()) {
             return $this->createApiResponse(['errors' => (string)$form->getErrors(true, false)], Response::HTTP_BAD_REQUEST);
         }
+
+        if ($service->isFeatured()) {
+            $existingFeatured = $this->em->getRepository(ServiceOffering::class)
+                ->findOneBy(['creator' => $currentUser, 'featured' => true]);
+
+            // Check that it's not the same service being updated
+            if ($existingFeatured && $existingFeatured->getId() !== $service->getId()) {
+                return $this->createApiResponse([
+                    'message' => 'You already have a featured service. Only one featured service is allowed.'
+                ], Response::HTTP_BAD_REQUEST);
+            }
+        }
+
 
         $this->em->flush();
 

@@ -10,7 +10,7 @@ trait UuidId
 {
     #[ORM\Id]
     #[ORM\Column(type: 'uuid', unique: true)]
-    #[Groups(['booking:read','user:read','conversation:read','conversation:write','slot:read','slot:write','user:read','service:read'])]
+    #[Groups(['booking:read','user:read','conversation:read','conversation:write','slot:read','slot:write','user:read','service:read','comment:read'])]
     private Uuid $id;
 
     #[ORM\PrePersist]

@@ -91,7 +91,8 @@ class WalletController extends AbstractController
     ): JsonResponse {
         $data = json_decode($request->getContent(), true);
         $amountCents = $data['amountCents'] ?? null;
-
+        $paymentMethodId =  $user->getStripePaymentMethods() ?? $data['paymentMethod'] ;
+        
         if (!$amountCents || $amountCents < 500) { // Minimum 5€
             return $this->createApiResponse([
                 'message' => 'Minimum purchase is 5€',
@@ -103,7 +104,10 @@ class WalletController extends AbstractController
             $paymentIntent = $this->stripeService->createPaymentIntent(
                 $user,
                 $amountCents,
-                'eur'
+                'eur',
+                null,
+                [],
+                $paymentMethodId
             );
 
             return $this->createApiResponse([
