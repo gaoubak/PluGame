@@ -29,10 +29,12 @@ class Booking
 
     #[ORM\ManyToOne(inversedBy: 'bookingsAsAthlete', targetEntity: User::class)]
     #[ORM\JoinColumn(name: 'athlete_user_id', referencedColumnName: 'id', onDelete: 'CASCADE', nullable: false)]
+    #[Groups(['booking:read'])]
     private ?User $athlete = null;
 
     #[ORM\ManyToOne(inversedBy: 'bookingsAsCreator', targetEntity: User::class)]
     #[ORM\JoinColumn(name: 'creator_user_id', referencedColumnName: 'id', onDelete: 'CASCADE', nullable: false)]
+    #[Groups(['booking:read'])]
     private ?User $creator = null;
 
     #[ORM\ManyToOne(targetEntity: ServiceOffering::class)]

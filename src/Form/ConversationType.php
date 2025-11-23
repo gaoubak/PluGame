@@ -31,32 +31,17 @@ class ConversationType extends AbstractType
                 'choice_label' => 'email',
                 'required' => true,
             ])
-
-            ->add('lastMessageAt', DateTimeType::class, [
-                'widget' => 'single_text',
-                'required' => false,
-            ])
-            ->add('lastMessagePreview', TextType::class, [
-                'required' => false,
-            ])
-            ->add('unreadCount', IntegerType::class, [
-                'required' => false,
-            ])
-            ->add('archivedAt', DateTimeType::class, [
-                'widget' => 'single_text',
-                'required' => false,
-            ])
-            ->add('mutedUntil', DateTimeType::class, [
-                'widget' => 'single_text',
-                'required' => false,
-            ])
         ;
+
+        // Note: Fields like lastMessageAt, lastMessagePreview, unreadCount, archivedAt, mutedUntil
+        // are managed automatically by the entity and should not be set via the form
     }
 
     public function configureOptions(OptionsResolver $resolver)
     {
         $resolver->setDefaults([
             'data_class' => Conversation::class,
+            'csrf_protection' => false, // Disable CSRF for API usage
         ]);
     }
 }

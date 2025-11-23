@@ -16,6 +16,7 @@ class StripePayoutService
     public function __construct(
         private readonly EntityManagerInterface $em,
         private readonly EmailService $emailService,
+        private readonly BankPayoutService $bankPayoutService,
         string $stripeSecretKey,
     ) {
         $this->stripe = new StripeClient($stripeSecretKey);
@@ -26,9 +27,11 @@ class StripePayoutService
      *
      * Flow:
      * 1. Calculate creator amount (after platform fee)
-     * 2. Create Stripe Transfer to creator's Connect account
-     * 3. Update booking status
-     * 4. Send notification email
+     * 2. Check creator's payout preference
+     * 3a. If Stripe Connect: Create immediate transfer
+     * 3b. If Bank Transfer: Mark as pending for manual/batch processing
+     * 4. Update booking status
+     * 5. Send notification email
      */
     public function processBookingPayout(Booking $booking): void
     {
@@ -38,17 +41,34 @@ class StripePayoutService
         }
 
         $creator = $booking->getCreator();
-        $totalAmountCents = $booking->getTotalAmountCents();
+        $totalAmountCents = $booking->getTotalCents();
         $currency = $booking->getCurrency() ?? 'eur';
-
-        // Verify creator has Stripe Connect account
-        if (!$creator->getStripeAccountId()) {
-            throw new \Exception('Creator does not have a Stripe Connect account');
-        }
 
         // Calculate amounts
         $platformFeeCents = $this->calculatePlatformFee($totalAmountCents);
         $creatorAmountCents = $totalAmountCents - $platformFeeCents;
+
+        // Update booking with calculated amounts (needed for both payout methods)
+        $booking->setCreatorAmountCents($creatorAmountCents);
+        $booking->setPlatformFeeCents($platformFeeCents);
+
+        // Check creator's payout preference
+        if ($creator->usesStripeConnect()) {
+            $this->processStripeConnectPayout($booking, $creator, $creatorAmountCents, $currency);
+        } else {
+            $this->processBankTransferPayout($booking, $creator, $creatorAmountCents, $currency);
+        }
+    }
+
+    /**
+     * ✅ Process Stripe Connect payout (immediate transfer)
+     */
+    private function processStripeConnectPayout(Booking $booking, User $creator, int $creatorAmountCents, string $currency): void
+    {
+        // Verify creator has Stripe Connect account
+        if (!$creator->getStripeAccountId()) {
+            throw new \Exception('Creator does not have a Stripe Connect account');
+        }
 
         // Get the original payment intent or charge
         $paymentIntentId = $booking->getStripePaymentIntentId();
@@ -74,8 +94,6 @@ class StripePayoutService
             // Update booking
             $booking->setPayoutCompletedAt(new \DateTimeImmutable());
             $booking->setStripeTransferId($transfer->id);
-            $booking->setCreatorAmountCents($creatorAmountCents);
-            $booking->setPlatformFeeCents($platformFeeCents);
             $this->em->flush();
 
             // Send notification email
@@ -89,6 +107,15 @@ class StripePayoutService
             error_log('Stripe payout failed: ' . $e->getMessage());
             throw new \Exception('Failed to process payout: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * ✅ Process Bank Transfer payout (automated via Stripe Payouts API)
+     */
+    private function processBankTransferPayout(Booking $booking, User $creator, int $creatorAmountCents, string $currency): void
+    {
+        // Use BankPayoutService to process SEPA transfer via Stripe Payouts API
+        $this->bankPayoutService->processBankPayout($booking);
     }
 
     /**

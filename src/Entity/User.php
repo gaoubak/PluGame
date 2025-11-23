@@ -44,11 +44,11 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column(type: 'integer')]
-    #[Groups(['user:read','conversation:read','booking:read','creator:feed', 'conversation:write','get_message', 'message:read','service:read','comment:read'])]
+    #[Groups(['user:read','conversation:read','booking:read','creator:feed', 'conversation:write','get_message', 'message:read','service:read','comment:read','review:read'])]
     private ?int $id = null;
 
     #[ORM\Column(type: 'string', length: 150, unique: true)]
-    #[Groups(['user:read','conversation:read','booking:read','creator:feed', 'conversation:write','get_message','message:read','comment:read'])]
+    #[Groups(['user:read','conversation:read','booking:read','creator:feed', 'conversation:write','get_message','message:read','comment:read','review:read'])]
     private ?string $username = null;
 
     #[ORM\Column(type: 'string', length: 180, unique: true)]
@@ -67,7 +67,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     // existing fields
     #[ORM\Column(type: 'string', length: 255, nullable: true)]
-    #[Groups(['user:read','creator:feed','conversation:write', 'conversation:read','get_message', 'message:read','comment:read'])]
+    #[Groups(['user:read','creator:feed','conversation:write', 'conversation:read','get_message', 'message:read','comment:read','booking:read','review:read'])]
     private ?string $userPhoto = null;
 
     #[ORM\Column(type: 'boolean', options: ['default' => false])]
@@ -182,11 +182,10 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     // Reviews
     #[ORM\OneToMany(mappedBy: 'reviewer', targetEntity: Review::class)]
-    #[Groups(['user:read'])]
     private Collection $reviews;
 
     #[ORM\OneToMany(mappedBy: 'creator', targetEntity: Review::class)]
-    #[Groups(['user:read','creator:feed'])]
+    #[Groups(['creator:feed'])]
     private Collection $receivedReviews;
 
     // Media
@@ -219,6 +218,11 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     #[ORM\Column(type: 'string', length: 255, nullable: true)]
     private ?string $stripeAccountId = null;
+
+    // Payout preference: 'stripe_connect' or 'bank_transfer'
+    #[ORM\Column(type: 'string', length: 20, options: ['default' => 'stripe_connect'])]
+    #[Groups(['user:read'])]
+    private string $payoutMethod = 'stripe_connect';
 
     #[ORM\Column(type: 'boolean', options: ['default' => false])]
     private bool $isPlugPlus = false;
@@ -765,6 +769,30 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function hasStripeAccount(): bool
     {
         return $this->stripeCustomerId !== null;
+    }
+
+    public function getPayoutMethod(): string
+    {
+        return $this->payoutMethod;
+    }
+
+    public function setPayoutMethod(string $payoutMethod): self
+    {
+        if (!in_array($payoutMethod, ['stripe_connect', 'bank_transfer'])) {
+            throw new \InvalidArgumentException('Invalid payout method. Must be "stripe_connect" or "bank_transfer".');
+        }
+        $this->payoutMethod = $payoutMethod;
+        return $this;
+    }
+
+    public function usesStripeConnect(): bool
+    {
+        return $this->payoutMethod === 'stripe_connect';
+    }
+
+    public function usesBankTransfer(): bool
+    {
+        return $this->payoutMethod === 'bank_transfer';
     }
 
     // ===== Payments =====

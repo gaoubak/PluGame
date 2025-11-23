@@ -65,6 +65,7 @@ class MessageController extends AbstractController
     #[Route('/conversation/{id}', name: 'message_by_conversation', methods: ['GET'])]
     public function byConversation(
         Conversation $conversation,
+        Request $request,
         #[CurrentUser] User $user
     ): JsonResponse {
         // Security check: verify user is in conversation
@@ -72,16 +73,30 @@ class MessageController extends AbstractController
             return $this->forbiddenResponse('You are not part of this conversation');
         }
 
-        $messages = $this->messageRepository->findBy(
-            ['conversation' => $conversation],
-            ['createdAt' => 'ASC', 'id' => 'ASC']
-        );
+        // Pagination parameters
+        $page = max(1, (int) $request->query->get('page', 1));
+        $limit = min(100, max(1, (int) $request->query->get('limit', 50)));
+        $offset = ($page - 1) * $limit;
+
+        // Get total count
+        $totalMessages = $this->messageRepository->countByConversation($conversation);
+
+        // Get paginated messages
+        $messages = $this->messageRepository->findByConversationPaginated($conversation, $limit, $offset);
 
         $data = $this->serializer->normalize($messages, null, [
             'groups' => ['get_message', 'message:read']
         ]);
 
-        return $this->createApiResponse($data, Response::HTTP_OK);
+        return $this->json([
+            'data' => $data,
+            'pagination' => [
+                'page' => $page,
+                'limit' => $limit,
+                'total' => $totalMessages,
+                'totalPages' => (int) ceil($totalMessages / $limit),
+            ],
+        ], Response::HTTP_OK);
     }
 
     /**

@@ -62,4 +62,37 @@ class ConversationRepository extends ServiceEntityRepository
             ->getQuery()
             ->getSingleScalarResult();
     }
+
+    /**
+     * Count total conversations for a user
+     */
+    public function countByUser(User $user): int
+    {
+        return (int) $this->createQueryBuilder('c')
+            ->select('COUNT(c.id)')
+            ->where('c.athlete = :user')
+            ->orWhere('c.creator = :user')
+            ->setParameter('user', $user)
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
+    /**
+     * Find conversations for a user with pagination
+     *
+     * @return Conversation[]
+     */
+    public function findByUserPaginated(User $user, int $limit, int $offset): array
+    {
+        return $this->createQueryBuilder('c')
+            ->where('c.athlete = :user')
+            ->orWhere('c.creator = :user')
+            ->setParameter('user', $user)
+            ->orderBy('c.lastMessageAt', 'DESC')
+            ->addOrderBy('c.updatedAt', 'DESC')
+            ->setMaxResults($limit)
+            ->setFirstResult($offset)
+            ->getQuery()
+            ->getResult();
+    }
 }

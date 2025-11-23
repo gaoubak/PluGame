@@ -46,7 +46,7 @@ class ProfileController extends AbstractController
         $total = (clone $qb)->select('COUNT(r.id)')->resetDQLPart('orderBy')->getQuery()->getSingleScalarResult();
         $items = $qb->setFirstResult($offset)->setMaxResults($limit)->getQuery()->getResult();
 
-        $data  = $this->serializer->normalize($items, null, ['groups' => ['review:read','user:read']]);
+        $data  = $this->serializer->normalize($items, null, ['groups' => ['review:read']]);
 
         // quick average (if you store rating on Review as int 1..5)
         $avg = $this->em->createQueryBuilder()
@@ -89,7 +89,7 @@ class ProfileController extends AbstractController
         $total = (clone $qb)->select('COUNT(r.id)')->resetDQLPart('orderBy')->getQuery()->getSingleScalarResult();
         $items = $qb->setFirstResult($offset)->setMaxResults($limit)->getQuery()->getResult();
 
-        $data  = $this->serializer->normalize($items, null, ['groups' => ['review:read','user:read']]);
+        $data  = $this->serializer->normalize($items, null, ['groups' => ['review:read']]);
 
         return $this->json([
             'page'    => $page,

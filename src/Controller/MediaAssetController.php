@@ -28,28 +28,20 @@ class MediaAssetController extends AbstractController
     ) {
     }
 
-    /**
-     * Multipart upload to API with MULTIPLE files support
-     * form-data:
-     *   - files[]: (required, can be multiple)
-     *   - purpose: AVATAR | CREATOR_FEED | ATHLETE_FEED | BOOKING_DELIVERABLE
-     *   - targetId: (optional) booking id, or profile id
-     */
     #[Route('/upload', name: 'media_asset_upload', methods: ['POST'])]
     public function upload(Request $req): JsonResponse
     {
-        /** @var User|null $user */
-        $user = $this->security->getUser();
-        if (!$user) {
-            return $this->json(['message' => 'Unauthorized'], 401);
-        }
-
         // DEBUG: Log everything we receive
         $contentType = $req->headers->get('Content-Type');
         error_log('Content-Type: ' . $contentType);
         
         // Check if this is a JSON payload (base64 encoded images - handle separately)
         if (str_contains($contentType ?? '', 'application/json')) {
+            /** @var User|null $user */
+            $user = $this->security->getUser();
+            if (!$user) {
+                return $this->json(['message' => 'Unauthorized'], 401);
+            }
             return $this->handleJsonUpload($req, $user);
         }
 
@@ -91,6 +83,7 @@ class MediaAssetController extends AbstractController
 
         error_log('Extracted purpose: ' . $purpose);
         error_log('Extracted targetId: ' . ($targetId ?? 'null'));
+        
         // Debug: log what we received
         if (!$files) {
             $allFiles = $req->files->all();
@@ -121,6 +114,58 @@ class MediaAssetController extends AbstractController
             ], 400);
         }
 
+        // ✅ NEW: Check authentication based on purpose
+        // Only AVATAR uploads can be public (for registration flow)
+        // Everything else requires authentication
+        /** @var User|null $user */
+        $user = $this->security->getUser();
+        
+        if (!$user && $purpose !== MediaAsset::PURPOSE_AVATAR) {
+            return $this->json([
+                'message' => 'Authentication required',
+                'detail' => 'Only avatar uploads are allowed without authentication'
+            ], 401);
+        }
+
+        // For avatar uploads without auth, we need a temporary user ID or identifier
+        // This should come from the registration flow (e.g., a temp token or user ID)
+        if (!$user && $purpose === MediaAsset::PURPOSE_AVATAR) {
+            // Option 1: Require a tempUserId parameter for registration avatars
+            $tempUserId = $req->get('tempUserId') ?? $req->get('userId');
+            if (!$tempUserId) {
+                return $this->json([
+                    'message' => 'tempUserId or userId required for avatar upload during registration'
+                ], 400);
+            }
+            
+            // For public avatar uploads, we'll upload to a temp location
+            // The avatar will be moved/linked when user completes registration
+            // For now, we'll just upload the file and return the URL
+            try {
+                $file = $files[0]; // Only allow single avatar upload
+                
+                // Upload to temp avatars location
+                $prefix = "temp/avatars/{$tempUserId}";
+                $put = $this->r2->upload($file, $prefix);
+                
+                return $this->json([
+                    'message' => 'Avatar uploaded successfully',
+                    'url' => $put['url'] ?: $put['key'],
+                    'key' => $put['key'],
+                    'tempUserId' => $tempUserId,
+                    'note' => 'This avatar will be linked to your account after registration'
+                ], 201);
+            } catch (\Exception $e) {
+                error_log('Avatar upload error: ' . $e->getMessage());
+                return $this->json([
+                    'message' => 'Upload failed',
+                    'error' => $e->getMessage()
+                ], 500);
+            }
+        }
+
+        // ✅ From here on, $user is guaranteed to be authenticated
+
         // Validate target for specific purposes
         $booking = null;
         $creatorProfile = null;
@@ -135,24 +180,32 @@ class MediaAssetController extends AbstractController
                 if (!$booking) {
                     return $this->json(['message' => 'Booking not found'], 404);
                 }
+                // ✅ Only creators can upload deliverables
                 if ($booking->getCreator()->getId() !== $user->getId()) {
-                    return $this->json(['message' => 'Forbidden'], 403);
+                    return $this->json(['message' => 'Forbidden - Only the creator can upload deliverables'], 403);
                 }
                 break;
 
             case MediaAsset::PURPOSE_CREATOR_FEED:
                 $creatorProfile = $user->getCreatorProfile();
                 if (!$creatorProfile) {
-                    return $this->json(['message' => 'No creator profile'], 400);
+                    return $this->json(['message' => 'No creator profile found'], 400);
                 }
                 break;
 
             case MediaAsset::PURPOSE_ATHLETE_FEED:
                 $athleteProfile = $user->getAthleteProfile();
                 if (!$athleteProfile) {
-                    return $this->json(['message' => 'No athlete profile'], 400);
+                    return $this->json(['message' => 'No athlete profile found'], 400);
                 }
                 break;
+                
+            case MediaAsset::PURPOSE_AVATAR:
+                // Authenticated avatar upload - proceed normally
+                break;
+                
+            default:
+                return $this->json(['message' => 'Invalid purpose'], 400);
         }
 
         // Process each file
@@ -163,10 +216,10 @@ class MediaAssetController extends AbstractController
             try {
                 // Decide R2 prefix based on purpose
                 $prefix = match ($purpose) {
-                    MediaAsset::PURPOSE_AVATAR => 'avatars',
+                    MediaAsset::PURPOSE_AVATAR => "avatars/{$user->getId()}",
                     MediaAsset::PURPOSE_BOOKING_DELIVERABLE => "deliverables/{$targetId}",
-                    MediaAsset::PURPOSE_CREATOR_FEED => 'creator',
-                    MediaAsset::PURPOSE_ATHLETE_FEED => 'athlete',
+                    MediaAsset::PURPOSE_CREATOR_FEED => "creator/{$user->getId()}",
+                    MediaAsset::PURPOSE_ATHLETE_FEED => "athlete/{$user->getId()}",
                     default => 'uploads',
                 };
 
@@ -235,6 +288,7 @@ class MediaAssetController extends AbstractController
                 ];
 
             } catch (\Exception $e) {
+                error_log('File upload error: ' . $e->getMessage());
                 $errors[] = [
                     'filename' => $file->getClientOriginalName(),
                     'error' => $e->getMessage(),
@@ -258,15 +312,19 @@ class MediaAssetController extends AbstractController
             'total' => count($uploadedAssets),
         ];
 
+        // Add convenience 'url' field for single file uploads
+        if (count($uploadedAssets) === 1) {
+            $response['url'] = $uploadedAssets[0]['publicUrl'];
+        }
+
         if (!empty($errors)) {
             $response['errors'] = $errors;
             $response['failedCount'] = count($errors);
         }
 
         return $this->json($response, 201);
-    }
-
-    /**
+    }   
+     /**
      * Register multiple pre-uploaded assets
      * JSON:
      * {
@@ -497,14 +555,14 @@ class MediaAssetController extends AbstractController
             $extension = pathinfo($filename, PATHINFO_EXTENSION);
             $key = "{$prefix}/{$uuid}.{$extension}";
 
-            $uploadUrl = $this->r2->presignedPut($key, $contentType, 3600);
-            $publicUrl = $this->r2->publicUrl($key);
+            // presignedPut signature: presignedPut(string $filename, string $contentType, string $prefix, int $ttlSeconds)
+            $presignedData = $this->r2->presignedPut($filename, $contentType, $prefix, 3600);
 
             $presignedUrls[] = [
                 'filename' => $filename,
-                'uploadUrl' => $uploadUrl,
-                'key' => $key,
-                'publicUrl' => $publicUrl,
+                'uploadUrl' => $presignedData['uploadUrl'], // Extract just the URL string
+                'key' => $presignedData['key'],             // Use the key from presignedPut
+                'publicUrl' => $presignedData['publicUrl'], // Use publicUrl from presignedPut
                 'contentType' => $contentType,
             ];
         }
@@ -747,11 +805,18 @@ class MediaAssetController extends AbstractController
             $this->mercurePublisher->publishDeliverableUploaded($booking, $totalFiles);
         }
 
-        return $this->json([
+        $response = [
             'message' => sprintf('%d file(s) uploaded', count($uploadedAssets)),
             'uploaded' => $uploadedAssets,
             'total' => count($uploadedAssets),
             'errors' => $errors,
-        ], 201);
+        ];
+
+        // Add convenience 'url' field for single file uploads
+        if (count($uploadedAssets) === 1) {
+            $response['url'] = $uploadedAssets[0]['publicUrl'];
+        }
+
+        return $this->json($response, 201);
     }
 }

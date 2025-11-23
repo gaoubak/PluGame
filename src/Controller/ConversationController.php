@@ -53,18 +53,35 @@ class ConversationController extends AbstractFOSRestController
     }
 
     #[Route('/me', name: 'conversation_me', methods: ['GET'], priority: 10)]
-    public function getMyConversations(): Response
+    public function getMyConversations(Request $request): Response
     {
         $user = $this->security->getUser();
         if (!$user instanceof User) {
             return $this->json(['message' => 'Unauthorized'], Response::HTTP_UNAUTHORIZED);
         }
 
-        // Assuming Conversation has athlete and creator relations
-        $myConversations = $this->repo->findByUser($user);
+        // Pagination parameters
+        $page = max(1, (int) $request->query->get('page', 1));
+        $limit = min(50, max(1, (int) $request->query->get('limit', 20)));
+        $offset = ($page - 1) * $limit;
+
+        // Get total count
+        $totalConversations = $this->repo->countByUser($user);
+
+        // Get paginated conversations
+        $myConversations = $this->repo->findByUserPaginated($user, $limit, $offset);
 
         $data = $this->serializer->normalize($myConversations, null, ['groups' => ['conversation:read']]);
-        return $this->json($data, Response::HTTP_OK);
+
+        return $this->json([
+            'data' => $data,
+            'pagination' => [
+                'page' => $page,
+                'limit' => $limit,
+                'total' => $totalConversations,
+                'totalPages' => (int) ceil($totalConversations / $limit),
+            ],
+        ], Response::HTTP_OK);
     }
 
     #[Route('/create', name: 'conversation_create', methods: ['POST'])]

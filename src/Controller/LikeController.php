@@ -33,13 +33,19 @@ class LikeController extends AbstractController
      */
     private function tryResolveCreatorFromPostId(string $postId): ?User
     {
-        // Checks if $postId starts with 'post_'
-        if (str_starts_with($postId, 'post_')) { 
-            $candidateId = substr($postId, strlen('post_')); 
-            if (ctype_digit($candidateId)) {
-                return $this->userRepository->find((int)$candidateId); 
-            }
+        // Support both formats: "post_123" and "123"
+        $candidateId = $postId;
+
+        // If it starts with 'post_', remove the prefix
+        if (str_starts_with($postId, 'post_')) {
+            $candidateId = substr($postId, strlen('post_'));
         }
+
+        // Check if it's a valid numeric ID
+        if (ctype_digit($candidateId)) {
+            return $this->userRepository->find((int)$candidateId);
+        }
+
         return null;
     }
 

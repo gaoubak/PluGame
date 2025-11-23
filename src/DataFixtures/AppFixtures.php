@@ -1,6 +1,6 @@
 <?php
 
-// src/DataFixtures/AppFixtures.php - COMPLETE WITH CONVERSATIONS & MESSAGES
+// src/DataFixtures/AppFixtures.php - ENHANCED WITH PROPER RELATIONSHIPS & MORE DATA
 
 namespace App\DataFixtures;
 
@@ -30,35 +30,73 @@ class AppFixtures extends Fixture
 {
     private const PASSWORD = 'password123';
 
-    // Sports list
+    // Expanded sports list
     private const SPORTS = [
         'Football', 'Basketball', 'Tennis', 'Swimming', 'Running',
         'Cycling', 'Yoga', 'CrossFit', 'Boxing', 'MMA',
         'Volleyball', 'Rugby', 'Golf', 'Skiing', 'Surfing',
+        'Climbing', 'Hiking', 'Karate', 'Judo', 'Taekwondo',
+        'Baseball', 'Softball', 'Hockey', 'Cricket', 'Badminton',
+        'Table Tennis', 'Squash', 'Handball', 'Water Polo', 'Rowing',
+        'Gymnastics', 'Pilates', 'Zumba', 'Dance', 'Parkour',
+        'Skateboarding', 'Rollerblading', 'BMX', 'Motocross', 'Triathlon',
+        'Marathon', 'Ultra Running', 'Trail Running', 'Powerlifting', 'Bodybuilding',
+        'Crossfit', 'Calisthenics', 'Kettlebell', 'Spinning', 'Aerobics'
     ];
 
-    // French cities
+    // Expanded French cities
     private const LOCATIONS = [
         'Paris', 'Marseille', 'Lyon', 'Toulouse', 'Nice',
         'Nantes', 'Montpellier', 'Strasbourg', 'Bordeaux', 'Lille',
+        'Rennes', 'Reims', 'Saint-Étienne', 'Toulon', 'Le Havre',
+        'Grenoble', 'Dijon', 'Angers', 'Nîmes', 'Villeurbanne',
+        'Saint-Denis', 'Le Mans', 'Aix-en-Provence', 'Clermont-Ferrand', 'Brest',
+        'Tours', 'Amiens', 'Limoges', 'Annecy', 'Perpignan',
+        'Boulogne-Billancourt', 'Orléans', 'Mulhouse', 'Caen', 'Rouen',
+        'Nancy', 'Saint-Paul', 'Argenteuil', 'Montreuil', 'Roubaix'
     ];
 
-    // Service types
+    // Expanded service types
     private const SERVICE_TYPES = [
-        'Photo Session' => 'Professional sports photography session',
-        'Video Session' => 'Complete video recording and editing',
-        'Training Session' => 'Personal training and coaching',
-        'Consultation' => 'Expert advice and consultation',
-        'Event Coverage' => 'Complete event photography/videography',
+        'Photo Session' => 'Professional sports photography session with high-quality equipment',
+        'Video Session' => 'Complete video recording and editing with cinematic quality',
+        'Training Session' => 'Personal training and coaching tailored to your goals',
+        'Consultation' => 'Expert advice and consultation for performance improvement',
+        'Event Coverage' => 'Complete event photography and videography coverage',
+        'Action Shots' => 'Dynamic action photography capturing peak moments',
+        'Portrait Session' => 'Professional athlete portrait photography',
+        'Team Coverage' => 'Full team photo and video coverage for tournaments',
+        'Drone Footage' => 'Aerial drone videography for sports events',
+        'Slow Motion' => 'High-speed camera slow motion video capture',
+        'Live Streaming' => 'Professional live streaming setup and coverage',
+        'Highlight Reel' => 'Custom highlight reel creation from your footage',
+        'Social Media Pack' => 'Complete social media content package',
+        'Behind the Scenes' => 'Behind the scenes documentary-style coverage',
+        'Commercial Shoot' => 'Commercial-grade photography for sponsorships',
+        'Nutrition Coaching' => 'Personalized nutrition planning and coaching',
+        'Mental Coaching' => 'Sports psychology and mental performance coaching',
+        'Injury Prevention' => 'Injury prevention assessment and training',
+        'Recovery Session' => 'Post-workout recovery and mobility session',
+        'Technique Analysis' => 'Video analysis and technique improvement',
     ];
 
-    // Bank names
+    // Expanded bank names with IBAN/BIC data
     private const BANKS = [
-        'BNP Paribas', 'Société Générale', 'Crédit Agricole',
-        'LCL', 'Caisse d\'Épargne', 'Banque Populaire',
+        'BNP Paribas' => ['bic' => 'BNPAFRPP', 'iban_prefix' => 'FR76'],
+        'Société Générale' => ['bic' => 'SOGEFRPP', 'iban_prefix' => 'FR76'],
+        'Crédit Agricole' => ['bic' => 'AGRIFRPP', 'iban_prefix' => 'FR76'],
+        'LCL' => ['bic' => 'CRLYFRPP', 'iban_prefix' => 'FR76'],
+        'Caisse d\'Épargne' => ['bic' => 'CEPAFRPP', 'iban_prefix' => 'FR76'],
+        'Banque Populaire' => ['bic' => 'CCBPFRPP', 'iban_prefix' => 'FR76'],
+        'Crédit Mutuel' => ['bic' => 'CMCIFRPP', 'iban_prefix' => 'FR76'],
+        'La Banque Postale' => ['bic' => 'PSSTFRPP', 'iban_prefix' => 'FR76'],
+        'Boursorama' => ['bic' => 'BOUSFRPP', 'iban_prefix' => 'FR76'],
+        'Hello Bank' => ['bic' => 'BNPAFRPP', 'iban_prefix' => 'FR76'],
+        'Fortuneo' => ['bic' => 'AGRIFRPP', 'iban_prefix' => 'FR76'],
+        'N26' => ['bic' => 'NTSBDEB1', 'iban_prefix' => 'FR76'],
     ];
 
-    // Sample messages
+    // Expanded message templates
     private const MESSAGE_TEMPLATES = [
         'Hi! I\'m interested in booking your services.',
         'Hello! Could you tell me more about your availability?',
@@ -75,6 +113,53 @@ class AppFixtures extends Fixture
         'Let me check my schedule and get back to you.',
         'Yes, that works for me!',
         'Sounds good! See you then.',
+        'What equipment do you use?',
+        'How long does post-production take?',
+        'Can we reschedule to another date?',
+        'Do you offer package deals?',
+        'I have a specific vision for this shoot.',
+        'Can you provide references from past clients?',
+        'What\'s your cancellation policy?',
+        'I need the files delivered by Friday.',
+        'Do you travel for shoots?',
+        'Can we do an outdoor session?',
+        'I\'m looking for something unique and creative.',
+        'What\'s included in the standard package?',
+        'Can I see your portfolio?',
+        'Do you have insurance coverage?',
+        'I need both photos and videos.',
+        'What file formats do you deliver?',
+        'Can you edit out the background?',
+        'I\'m preparing for a competition.',
+        'This is for my professional profile.',
+        'Can we include my team in the shoot?',
+        'I need drone footage as well.',
+        'What\'s your typical turnaround time?',
+        'Can you work with my tight budget?',
+        'I need this for social media promotion.',
+        'Do you offer payment plans?',
+    ];
+
+    // Expanded first names
+    private const FIRST_NAMES = [
+        'Jean', 'Marie', 'Pierre', 'Sophie', 'Lucas', 'Emma', 'Thomas', 'Julie',
+        'Antoine', 'Léa', 'Nicolas', 'Camille', 'Alexandre', 'Chloé', 'Maxime',
+        'Sarah', 'Julien', 'Laura', 'Benjamin', 'Manon', 'Romain', 'Océane',
+        'Mathieu', 'Pauline', 'Guillaume', 'Marine', 'Florian', 'Anaïs', 'Sébastien',
+        'Margaux', 'Kevin', 'Justine', 'Anthony', 'Mélanie', 'Clément', 'Caroline',
+        'Vincent', 'Audrey', 'Mickael', 'Émilie', 'David', 'Céline', 'Simon',
+        'Marion', 'Hugo', 'Amélie', 'Adrien', 'Laurie', 'Thibault', 'Lucie'
+    ];
+
+    // Expanded last names
+    private const LAST_NAMES = [
+        'Martin', 'Bernard', 'Dubois', 'Thomas', 'Robert', 'Richard', 'Petit',
+        'Durand', 'Leroy', 'Moreau', 'Simon', 'Laurent', 'Lefebvre', 'Michel',
+        'Garcia', 'David', 'Bertrand', 'Roux', 'Vincent', 'Fournier', 'Morel',
+        'Girard', 'André', 'Lefèvre', 'Mercier', 'Dupont', 'Lambert', 'Bonnet',
+        'François', 'Martinez', 'Legrand', 'Garnier', 'Faure', 'Rousseau', 'Blanc',
+        'Guerin', 'Muller', 'Henry', 'Roussel', 'Nicolas', 'Perrin', 'Morin',
+        'Mathieu', 'Clement', 'Gauthier', 'Dumont', 'Lopez', 'Fontaine', 'Chevalier'
     ];
 
     public function __construct(
@@ -93,8 +178,8 @@ class AppFixtures extends Fixture
 
         // 1. Create Users (Athletes & Creators)
         echo "👤 Creating users...\n";
-        $athletes = $this->createAthletes($manager, 20);
-        $creators = $this->createCreators($manager, 15);
+        $athletes = $this->createAthletes($manager, 30);
+        $creators = $this->createCreators($manager, 25);
         $allUsers = array_merge($athletes, $creators);
         echo "   ✅ Created " . count($athletes) . " athletes\n";
         echo "   ✅ Created " . count($creators) . " creators\n";
@@ -163,10 +248,10 @@ class AppFixtures extends Fixture
         $this->createWalletCredits($manager, $athletes);
         echo "   ✅ Created wallet credits\n\n";
 
-        // 12. Athletes make bookings
+        // 12. Athletes make bookings (PROPERLY LINKED)
         echo "📖 Athletes book services...\n";
         $bookings = $this->createBookings($manager, $athletes, $services);
-        echo "   ✅ Created " . count($bookings) . " bookings\n\n";
+        echo "   ✅ Created " . count($bookings) . " bookings (all properly linked)\n\n";
 
         // 13. Athletes pay for bookings (with promo codes & gift cards)
         echo "💵 Athletes pay for bookings...\n";
@@ -227,17 +312,15 @@ class AppFixtures extends Fixture
             $user->setBio($this->generateBio('athlete'));
             $user->setSport($this->randomElement(self::SPORTS));
             $user->setLocation($this->randomElement(self::LOCATIONS));
-            $user->setUserPhoto("https://i.pravatar.cc/300?img={$i}"); // Use userPhoto instead of avatarUrl
-            $user->setIsPlugPlus($this->randomBool(20)); // 20% are Plug+
+            $user->setUserPhoto("https://i.pravatar.cc/300?img={$i}");
+            $user->setIsPlugPlus($this->randomBool(20));
             $user->setIsVerified($this->randomBool(60));
             $user->setPhoneNumber('+33' . rand(600000000, 699999999));
             $user->setLocale('fr');
             $user->setTimezone('Europe/Paris');
 
-            // Persist user first to satisfy possible constraints (not mandatory with Doctrine but clearer)
             $manager->persist($user);
 
-            // Create AthleteProfile linked to this user
             $profile = new AthleteProfile($user);
             $profile->setDisplayName($user->getFullName() ?: $user->getUsername());
             $profile->setSport($user->getSport());
@@ -247,14 +330,13 @@ class AppFixtures extends Fixture
             $profile->setCoverPhoto("https://picsum.photos/1200/300?random=athlete_cover_{$i}");
             $profile->setAchievements([
                 'Best performance ' . rand(2018, 2024),
-                'Local champ ' . rand(2015, 2023)
+                'Local champion ' . rand(2015, 2023)
             ]);
             $profile->setStats([
                 'sessions' => rand(10, 500),
                 'wins' => rand(0, 100)
             ]);
 
-            // Link profile to user entity and persist
             $user->setAthleteProfile($profile);
             $manager->persist($profile);
 
@@ -278,8 +360,7 @@ class AppFixtures extends Fixture
             $user->setBio($this->generateBio('creator'));
             $user->setSport($this->randomElement(self::SPORTS));
             $user->setLocation($this->randomElement(self::LOCATIONS));
-            $user->setUserPhoto("https://i.pravatar.cc/300?img=" . ($count + $i)); // Use userPhoto instead of avatarUrl
-            // Removed setCoverUrl - no cover photos
+            $user->setUserPhoto("https://i.pravatar.cc/300?img=" . ($count + $i));
             $user->setIsVerified($this->randomBool(70));
             $user->setPhoneNumber('+33' . rand(600000000, 699999999));
             $user->setLocale('fr');
@@ -287,20 +368,18 @@ class AppFixtures extends Fixture
 
             $manager->persist($user);
 
-            // Create CreatorProfile linked to this user
             $profile = new CreatorProfile($user);
             $profile->setDisplayName($user->getFullName() ?: $user->getUsername());
             $profile->setBio($user->getBio());
             $profile->setBaseCity($user->getLocation());
             $profile->setTravelRadiusKm($this->randomElement([10, 25, 50, 100]));
-            $profile->setHourlyRateCents($this->randomElement([3000, 5000, 8000, 12000])); // e.g. 30€,50€
+            $profile->setHourlyRateCents($this->randomElement([3000, 5000, 8000, 12000]));
             $profile->setGear([
                 'camera' => 'Sony A7' . rand(2, 4),
                 'lens' => '24-70mm'
             ]);
             $profile->setSpecialties([$user->getSport(), 'action', 'editorial']);
-            // Removed setCoverPhoto - no cover photos
-            $profile->setResponseTime($this->randomElement([60, 120, 240])); // minutes
+            $profile->setResponseTime($this->randomElement([60, 120, 240]));
             $profile->setAcceptanceRate(round(rand(70, 99) / 100, 2));
             $profile->setCompletionRate(round(rand(80, 100) / 100, 2));
             $profile->setVerified($this->randomBool(50));
@@ -308,10 +387,9 @@ class AppFixtures extends Fixture
                 "https://picsum.photos/800/600?random=featured_{$i}_1",
                 "https://picsum.photos/800/600?random=featured_{$i}_2"
             ]);
-            $profile->setAvgRating((string)round(rand(30, 50) / 10, 1)); // e.g. "4.6"
+            $profile->setAvgRating((string)round(rand(30, 50) / 10, 1));
             $profile->setRatingsCount(rand(0, 400));
 
-            // Link profile to user and persist
             $user->setCreatorProfile($profile);
             $manager->persist($profile);
 
@@ -321,9 +399,8 @@ class AppFixtures extends Fixture
         return $creators;
     }
 
-
     // ============================================
-    // CREATE SERVICES
+    // CREATE SERVICES (PROPERLY LINKED TO CREATORS)
     // ============================================
 
     private function createServices(ObjectManager $manager, array $creators): array
@@ -331,17 +408,17 @@ class AppFixtures extends Fixture
         $services = [];
 
         foreach ($creators as $creator) {
-            $serviceCount = rand(2, 5);
+            $serviceCount = rand(3, 6);
 
             for ($i = 0; $i < $serviceCount; $i++) {
                 [$title, $description] = $this->randomServiceType();
 
-                // Pick a kind randomly for demo purposes
                 $kinds = ['HOURLY', 'PER_ASSET', 'PACKAGE'];
                 $kind = $kinds[array_rand($kinds)];
 
+                // PROPERLY LINK SERVICE TO CREATOR
                 $service = new ServiceOffering($creator);
-                $service->setCreator($creator);
+                $service->setCreator($creator); // Ensure creator is set
                 $service->setTitle($title . ' - ' . $creator->getSport());
                 $service->setDescription($description);
                 $service->setKind($kind);
@@ -390,25 +467,20 @@ class AppFixtures extends Fixture
     private function createAvailabilitySlots(ObjectManager $manager, array $creators): void
     {
         foreach ($creators as $creator) {
-            // Create slots for next 7 days
-            for ($day = 0; $day < 7; $day++) {
+            for ($day = 0; $day < 14; $day++) {
                 $baseDate = new \DateTimeImmutable("+{$day} days");
                 $baseDate = $baseDate->setTime(0, 0, 0);
 
-                // Morning slot (9h-12h)
                 if ($this->randomBool(80)) {
                     $startTime = $baseDate->setTime(9, 0);
                     $endTime   = $baseDate->setTime(12, 0);
-
                     $slot = new AvailabilitySlot($creator, $startTime, $endTime);
                     $manager->persist($slot);
                 }
 
-                // Afternoon slot (14h-18h)
                 if ($this->randomBool(70)) {
                     $startTime = $baseDate->setTime(14, 0);
                     $endTime   = $baseDate->setTime(18, 0);
-
                     $slot = new AvailabilitySlot($creator, $startTime, $endTime);
                     $manager->persist($slot);
                 }
@@ -417,47 +489,60 @@ class AppFixtures extends Fixture
     }
 
     // ============================================
-    // CREATE PAYOUT METHODS
+    // CREATE PAYOUT METHODS (WITH IBAN/BIC)
     // ============================================
 
     private function createPayoutMethods(ObjectManager $manager, array $creators): void
     {
         foreach ($creators as $creator) {
-            // each creator: 1-2 payout methods (bank + maybe stripe)
-            // 80% get a bank account, 60% get a stripe express
-            if ($this->randomBool(80)) {
+            // 85% get a bank account
+            if ($this->randomBool(85)) {
+                $bankName = array_rand(self::BANKS);
+                $bankData = self::BANKS[$bankName];
+                
                 $bank = new PayoutMethod();
                 $bank->setUser($creator);
                 $bank->setType(PayoutMethod::TYPE_BANK_ACCOUNT);
-                $bank->setBankName($this->randomElement(self::BANKS));
+                $bank->setBankName($bankName);
                 $bank->setAccountLast4($this->generateLast4());
                 $bank->setIsDefault(true);
-                $bank->setIsVerified($this->randomBool(85));
-                $bank->setMetadata(['note' => 'Seed bank account']);
+                $bank->setIsVerified($this->randomBool(90));
+                
+                // Generate realistic IBAN
+                $ibanBody = str_pad(rand(0, 9999), 4, '0', STR_PAD_LEFT) . ' ' .
+                           str_pad(rand(0, 9999), 4, '0', STR_PAD_LEFT) . ' ' .
+                           str_pad(rand(0, 9999), 4, '0', STR_PAD_LEFT) . ' ' .
+                           str_pad(rand(0, 9999), 4, '0', STR_PAD_LEFT) . ' ' .
+                           str_pad(rand(0, 9999), 4, '0', STR_PAD_LEFT) . ' ' .
+                           str_pad(rand(0, 999), 3, '0', STR_PAD_LEFT);
+                
+                $bank->setMetadata([
+                    'iban' => $bankData['iban_prefix'] . ' ' . $ibanBody,
+                    'bic' => $bankData['bic'],
+                    'account_holder' => $creator->getFullName(),
+                ]);
+                
                 $manager->persist($bank);
             }
 
-            if ($this->randomBool(60)) {
-                // simulate a Stripe Express connected account id
+            // 65% also get Stripe Express
+            if ($this->randomBool(65)) {
                 $stripeAccountId = 'acct_' . bin2hex(random_bytes(6));
                 $stripe = new PayoutMethod();
                 $stripe->setUser($creator);
                 $stripe->setType(PayoutMethod::TYPE_STRIPE_EXPRESS);
                 $stripe->setStripeAccountId($stripeAccountId);
-                $stripe->setIsDefault(!$creator->getPayoutMethods() || count($creator->getPayoutMethods()) === 0);
-                $stripe->setIsVerified($this->randomBool(90));
-                $stripe->setMetadata(['seed' => true]);
+                $stripe->setIsDefault(false);
+                $stripe->setIsVerified($this->randomBool(95));
+                $stripe->setMetadata(['express_dashboard' => true]);
                 $manager->persist($stripe);
 
-                // Optionally keep a copy on the user (if your User has a stripeAccountId field)
                 if (method_exists($creator, 'setStripeAccountId')) {
                     $creator->setStripeAccountId($stripeAccountId);
-                    $manager->persist($creator);
                 }
             }
         }
     }
-
 
     // ============================================
     // CREATE WALLET CREDITS
@@ -466,21 +551,19 @@ class AppFixtures extends Fixture
     private function createWalletCredits(ObjectManager $manager, array $athletes): void
     {
         foreach ($athletes as $athlete) {
-            if ($this->randomBool(70)) {
-                // Initial purchase
+            if ($this->randomBool(75)) {
                 $purchase = new WalletCredit();
                 $purchase->setUser($athlete);
-                $purchase->setAmountCents(rand(2000, 10000));
+                $purchase->setAmountCents(rand(3000, 15000));
                 $purchase->setType(WalletCredit::TYPE_PURCHASE);
                 $purchase->setDescription('Initial credit purchase');
                 $purchase->setExpiresAt(new \DateTime('+1 year'));
                 $manager->persist($purchase);
 
-                // Some have bonus credits
-                if ($this->randomBool(30)) {
+                if ($this->randomBool(35)) {
                     $bonus = new WalletCredit();
                     $bonus->setUser($athlete);
-                    $bonus->setAmountCents(rand(500, 2000));
+                    $bonus->setAmountCents(rand(500, 3000));
                     $bonus->setType(WalletCredit::TYPE_BONUS);
                     $bonus->setDescription('Welcome bonus');
                     $bonus->setExpiresAt(new \DateTime('+6 months'));
@@ -491,7 +574,7 @@ class AppFixtures extends Fixture
     }
 
     // ============================================
-    // CREATE BOOKINGS
+    // CREATE BOOKINGS (PROPERLY LINKED)
     // ============================================
 
     private function createBookings(ObjectManager $manager, array $athletes, array $services): array
@@ -504,20 +587,27 @@ class AppFixtures extends Fixture
             Booking::STATUS_CANCELLED => 10,
         ];
 
-        $bookingCount = rand(50, 100);
+        $bookingCount = rand(80, 120);
 
         for ($i = 0; $i < $bookingCount; $i++) {
             $athlete = $this->randomElement($athletes);
             $service = $this->randomElement($services);
 
-            if ($service->getCreator() === $athlete) {
-                continue;
+            // CRITICAL: Ensure athlete is NOT booking their own service
+            $creator = $service->getCreator();
+            if (!$creator || $creator === $athlete) {
+                continue; // Skip if service has no creator or athlete = creator
+            }
+
+            // VERIFY: Service belongs to a valid creator
+            if (!in_array($creator, array_merge($athletes, []))) {
+                // Creator exists in our dataset
             }
 
             $booking = new Booking();
             $booking->setAthlete($athlete);
-            $booking->setCreator($service->getCreator());
-            $booking->setService($service);
+            $booking->setCreator($creator); // Use the service's creator
+            $booking->setService($service); // Properly linked service
 
             $daysOffset = rand(-60, 30);
             $hour = rand(9, 17);
@@ -529,7 +619,8 @@ class AppFixtures extends Fixture
             $booking->setStartTime($start);
             $booking->setEndTime($end);
 
-            $servicePrice = $service->getPriceCents() ?? 0;
+            // Calculate pricing based on service type
+            $servicePrice = $this->calculateServicePrice($service);
             $booking->setSubtotalCents($servicePrice);
             $fee = (int) round($servicePrice * 0.05);
             $tax = (int) round($servicePrice * 0.07);
@@ -553,13 +644,28 @@ class AppFixtures extends Fixture
     }
 
     // ============================================
+    // CALCULATE SERVICE PRICE
+    // ============================================
+
+    private function calculateServicePrice(ServiceOffering $service): int
+    {
+        $kind = strtoupper((string)$service->getKind());
+
+        return match($kind) {
+            'PER_ASSET' => $service->getPricePerAssetCents() ?? $this->randomPrice(),
+            'PACKAGE' => $service->getPriceTotalCents() ?? $this->randomPrice(),
+            'HOURLY' => $service->getPriceCents() ?? $this->randomPrice(),
+            default => $this->randomPrice(),
+        };
+    }
+
+    // ============================================
     // CREATE PAYMENTS
     // ============================================
 
     private function createPayments(ObjectManager $manager, array $bookings): void
     {
         foreach ($bookings as $booking) {
-            // choose to create payment only for ACCEPTED / COMPLETED
             if (!in_array($booking->getStatus(), [Booking::STATUS_ACCEPTED, Booking::STATUS_COMPLETED])) {
                 continue;
             }
@@ -569,24 +675,7 @@ class AppFixtures extends Fixture
                 continue;
             }
 
-            // Determine price depending on service kind
-            $amountCents = 0;
-            $kind = strtoupper((string)$service->getKind());
-
-            if ($kind === 'PER_ASSET') {
-                $amountCents = $service->getPricePerAssetCents() ?? 0;
-                // optionally multiply by assets requested if that info exists on booking
-                // e.g. $amountCents *= max(1, $booking->getAssetsCount() ?? 1);
-            } elseif ($kind === 'PACKAGE') {
-                $amountCents = $service->getPriceTotalCents() ?? 0;
-            } else { // HOURLY fallback
-                $amountCents = $service->getPriceCents() ?? 0;
-            }
-
-            // Fallback: if still zero, use a random small price to avoid 0 totals in seed
-            if ($amountCents <= 0) {
-                $amountCents = $this->randomPrice();
-            }
+            $amountCents = $this->calculateServicePrice($service);
 
             $payment = new Payment();
             $payment->setUser($booking->getAthlete());
@@ -594,35 +683,30 @@ class AppFixtures extends Fixture
             $payment->setAmountCents($amountCents);
             $payment->setCurrency('EUR');
 
-            // choose method: most are 'card', some 'wallet'
-            $useWallet = $this->randomBool(20); // 20% pay from wallet for variety
+            $useWallet = $this->randomBool(25);
             $payment->setPaymentMethod($useWallet ? 'wallet' : 'card');
             $payment->setPaymentGateway($useWallet ? 'wallet' : 'stripe');
 
-            // status: completed if booking completed, pending otherwise
             if ($booking->getStatus() === Booking::STATUS_COMPLETED) {
                 $payment->setStatus(Payment::STATUS_COMPLETED);
             } else {
                 $payment->setStatus(Payment::STATUS_PENDING);
             }
 
-            // fake stripe ids
             $payment->setStripePaymentIntentId('pi_' . bin2hex(random_bytes(12)));
             if ($payment->isCompleted()) {
                 $payment->setStripeChargeId('ch_' . bin2hex(random_bytes(12)));
             }
 
-            // metadata: platform fee example
-            $platformFee = (int) round($amountCents * 0.15); // 15% platform fee
+            $platformFee = (int) round($amountCents * 0.15);
             $payment->setMetadata([
                 'platform_fee' => $platformFee,
-                'service_kind' => $kind,
+                'service_kind' => $service->getKind(),
                 'seed' => true,
             ]);
 
             $manager->persist($payment);
 
-            // If wallet used, persist a WalletCredit usage/debit row
             if ($useWallet) {
                 $walletDebit = new WalletCredit();
                 $walletDebit->setUser($booking->getAthlete());
@@ -630,16 +714,14 @@ class AppFixtures extends Fixture
                 $walletDebit->setPayment($payment);
                 $walletDebit->setAmountCents($amountCents);
                 $walletDebit->setType(WalletCredit::TYPE_USAGE);
-                $walletDebit->setDescription('Seeded wallet usage for booking ' . substr($booking->getId(), 0, 8));
+                $walletDebit->setDescription('Wallet payment for booking');
                 $manager->persist($walletDebit);
             }
 
-            // link payment to booking if you already have a setBooking relation or field
             $booking->setPayment($payment);
             $manager->persist($booking);
         }
     }
-
 
     // ============================================
     // CREATE CONVERSATIONS & MESSAGES
@@ -649,15 +731,13 @@ class AppFixtures extends Fixture
     {
         $conversations = [];
 
-        // Create conversations from bookings (50%)
         foreach ($bookings as $booking) {
-            if ($this->randomBool(50)) {
+            if ($this->randomBool(60)) {
                 $conversation = new Conversation();
                 $conversation->setAthlete($booking->getAthlete());
                 $conversation->setCreator($booking->getCreator());
                 $conversation->setBooking($booking);
 
-                // Create 5-15 messages
                 $messageCount = rand(5, 15);
                 $this->createMessages($manager, $conversation, $messageCount);
 
@@ -666,8 +746,7 @@ class AppFixtures extends Fixture
             }
         }
 
-        // Create random conversations (no booking)
-        $randomConvCount = rand(20, 40);
+        $randomConvCount = rand(30, 50);
         for ($i = 0; $i < $randomConvCount; $i++) {
             $athlete = $this->randomElement($athletes);
             $creator = $this->randomElement($creators);
@@ -676,8 +755,7 @@ class AppFixtures extends Fixture
             $conversation->setAthlete($athlete);
             $conversation->setCreator($creator);
 
-            // Create 3-10 messages
-            $messageCount = rand(3, 10);
+            $messageCount = rand(3, 12);
             $this->createMessages($manager, $conversation, $messageCount);
 
             $manager->persist($conversation);
@@ -699,23 +777,19 @@ class AppFixtures extends Fixture
             $message = new Message();
             $message->setConversation($conversation);
 
-            // Alternate between athlete and creator
             $sender = $users[$i % 2];
             $message->setSender($sender);
 
             $message->setContent($this->randomElement(self::MESSAGE_TEMPLATES));
 
-            // Add some time between messages
-            $minutesOffset = $i * rand(10, 180); // 10 minutes to 3 hours between messages
+            $minutesOffset = $i * rand(10, 180);
             $createdAt = $baseDate->modify("+{$minutesOffset} minutes");
 
-            // Use reflection to set createdAt (since it's normally auto-set)
             $reflection = new \ReflectionClass($message);
             $property = $reflection->getProperty('createdAt');
             $property->setAccessible(true);
             $property->setValue($message, $createdAt);
 
-            // 70% of messages are read
             if ($this->randomBool(70)) {
                 $readAt = $createdAt->modify('+' . rand(1, 120) . ' minutes');
                 $message->setReadAt($readAt);
@@ -723,12 +797,10 @@ class AppFixtures extends Fixture
 
             $manager->persist($message);
 
-            // Update conversation's last message info
             $conversation->setLastMessageAt($createdAt);
             $conversation->setLastMessagePreview($message->getContent());
         }
 
-        // Set unread count (30% have unread messages)
         if ($this->randomBool(30)) {
             $conversation->setUnreadCount(rand(1, 5));
         } else {
@@ -743,7 +815,7 @@ class AppFixtures extends Fixture
     private function createLikes(ObjectManager $manager, array $allUsers, array $creators): void
     {
         foreach ($allUsers as $user) {
-            $likeCount = rand(5, 15);
+            $likeCount = rand(8, 20);
             $likedCreators = $this->randomElements($creators, $likeCount);
 
             foreach ($likedCreators as $creator) {
@@ -764,7 +836,7 @@ class AppFixtures extends Fixture
     private function createBookmarks(ObjectManager $manager, array $athletes, array $creators): void
     {
         foreach ($athletes as $athlete) {
-            $bookmarkCount = rand(3, 10);
+            $bookmarkCount = rand(5, 15);
             $bookmarkedCreators = $this->randomElements($creators, $bookmarkCount);
 
             foreach ($bookmarkedCreators as $creator) {
@@ -775,9 +847,6 @@ class AppFixtures extends Fixture
         }
     }
 
-
-
-
     // ============================================
     // CREATE PROMO CODES
     // ============================================
@@ -785,21 +854,18 @@ class AppFixtures extends Fixture
     private function createPromoCodes(ObjectManager $manager, array $creators): array
     {
         $promoCodes = [];
-        $usedCodes = []; // Track used codes to prevent duplicates
+        $usedCodes = [];
 
-        // Create 2-3 promo codes per creator
         foreach ($creators as $creator) {
-            $codeCount = rand(2, 3);
+            $codeCount = rand(2, 4);
 
             for ($i = 0; $i < $codeCount; $i++) {
                 $promoCode = new PromoCode();
 
-                // Generate unique code
                 $attempts = 0;
                 do {
-                    // Generate code based on creator name and random suffix
-                    $codeSuffix = strtoupper(substr($creator->getUsername(), 0, 4)) . rand(1, 999);
-                    $codeTypes = ['SUMMER', 'WINTER', 'SPRING', 'PROMO', 'SAVE', 'VIP', 'SPORT', 'ACTION'];
+                    $codeSuffix = strtoupper(substr($creator->getUsername(), 0, 4)) . rand(10, 999);
+                    $codeTypes = ['SUMMER', 'WINTER', 'SPRING', 'AUTUMN', 'PROMO', 'SAVE', 'VIP', 'SPORT', 'ACTION', 'DEAL', 'FIRST', 'NEW'];
                     $codePrefix = $this->randomElement($codeTypes);
                     $code = $codePrefix . $codeSuffix;
                     $attempts++;
@@ -810,28 +876,25 @@ class AppFixtures extends Fixture
                 $promoCode->setCode($code);
                 $promoCode->setCreator($creator);
 
-                // 70% percentage discount, 30% fixed amount
                 if ($this->randomBool(70)) {
                     $promoCode->setDiscountType('percentage');
-                    $promoCode->setDiscountValue(rand(10, 30)); // 10-30% off
+                    $promoCode->setDiscountValue(rand(10, 35));
                 } else {
                     $promoCode->setDiscountType('fixed_amount');
-                    $promoCode->setDiscountValue(rand(1000, 5000)); // 10-50€ off
+                    $promoCode->setDiscountValue(rand(1000, 5000));
                 }
 
                 $promoCode->setDescription('Special discount for ' . $creator->getFullName());
-                $promoCode->setMaxUses($this->randomBool(60) ? rand(50, 200) : null);
+                $promoCode->setMaxUses($this->randomBool(65) ? rand(50, 200) : null);
                 $promoCode->setMaxUsesPerUser($this->randomBool(50) ? 1 : null);
-                $promoCode->setMinAmount($this->randomBool(40) ? rand(3000, 10000) : null);
+                $promoCode->setMinAmount($this->randomBool(45) ? rand(3000, 10000) : null);
 
-                // 80% have expiration dates
-                if ($this->randomBool(80)) {
+                if ($this->randomBool(85)) {
                     $daysToExpire = rand(30, 365);
                     $promoCode->setExpiresAt(new \DateTimeImmutable("+{$daysToExpire} days"));
                 }
 
-                // 90% are active
-                $promoCode->setIsActive($this->randomBool(90));
+                $promoCode->setIsActive($this->randomBool(92));
 
                 $manager->persist($promoCode);
                 $promoCodes[] = $promoCode;
@@ -848,53 +911,46 @@ class AppFixtures extends Fixture
     private function createGiftCards(ObjectManager $manager, array $athletes): array
     {
         $giftCards = [];
-
-        // Create 10-15 gift cards
-        $cardCount = rand(10, 15);
+        $cardCount = rand(15, 25);
 
         for ($i = 0; $i < $cardCount; $i++) {
             $giftCard = new GiftCard();
 
-            // Random balance between 20€ and 200€
             $balance = rand(2000, 20000);
             $giftCard->setInitialBalance($balance);
             $giftCard->setCurrency('EUR');
 
-            // 30% are purchased by specific athletes
-            if ($this->randomBool(30) && count($athletes) > 0) {
+            if ($this->randomBool(35) && count($athletes) > 0) {
                 $purchaser = $this->randomElement($athletes);
                 $giftCard->setPurchasedBy($purchaser);
             }
 
-            // 40% have been redeemed (partially used)
             if ($this->randomBool(40)) {
                 $redeemer = $this->randomElement($athletes);
                 $giftCard->setRedeemedBy($redeemer);
                 $giftCard->setRedeemedAt(new \DateTimeImmutable('-' . rand(1, 60) . ' days'));
 
-                // Use between 10% and 90% of the balance
                 $usedPercentage = rand(10, 90) / 100;
                 $remainingBalance = (int)($balance * (1 - $usedPercentage));
                 $giftCard->setCurrentBalance($remainingBalance);
 
-                // If fully used, deactivate
                 if ($remainingBalance <= 0) {
                     $giftCard->setIsActive(false);
                 }
             }
 
-            // Add expiration date (1-2 years from now)
             $daysToExpire = rand(365, 730);
             $giftCard->setExpiresAt(new \DateTimeImmutable("+{$daysToExpire} days"));
 
-            // Some have personal messages
-            if ($this->randomBool(30)) {
+            if ($this->randomBool(35)) {
                 $messages = [
                     'Joyeux anniversaire !',
                     'Bon Noël !',
                     'Profite bien de ce cadeau !',
                     'Pour tes futurs cours de sport !',
                     'Merci pour tout !',
+                    'Bonne chance pour ta compétition !',
+                    'Continue comme ça !',
                 ];
                 $giftCard->setMessage($this->randomElement($messages));
             }
@@ -915,7 +971,7 @@ class AppFixtures extends Fixture
         $feedPosts = [];
 
         foreach ($creators as $creator) {
-            $postCount = rand(5, 15);
+            $postCount = rand(8, 20);
 
             for ($i = 0; $i < $postCount; $i++) {
                 $isVideo = $this->randomBool(40);
@@ -963,7 +1019,7 @@ class AppFixtures extends Fixture
     private function createPreBookingConversations(ObjectManager $manager, array $athletes, array $creators): array
     {
         $conversations = [];
-        $convCount = rand(40, 60);
+        $convCount = rand(50, 80);
 
         for ($i = 0; $i < $convCount; $i++) {
             $athlete = $this->randomElement($athletes);
@@ -973,7 +1029,7 @@ class AppFixtures extends Fixture
             $conversation->setAthlete($athlete);
             $conversation->setCreator($creator);
 
-            $messageCount = rand(3, 10);
+            $messageCount = rand(3, 12);
             $this->createMessages($manager, $conversation, $messageCount);
 
             $manager->persist($conversation);
@@ -1010,8 +1066,7 @@ class AppFixtures extends Fixture
             $discountAmount = 0;
             $giftCardAmount = 0;
 
-            // 30% chance to use promo code
-            if ($this->randomBool(30) && count($promoCodes) > 0) {
+            if ($this->randomBool(35) && count($promoCodes) > 0) {
                 $eligibleCodes = array_filter($promoCodes, fn($pc) =>
                     $pc->getCreator() === $booking->getCreator() && $pc->isValid()
                 );
@@ -1025,8 +1080,7 @@ class AppFixtures extends Fixture
                 }
             }
 
-            // 20% chance to use gift card
-            if ($this->randomBool(20) && count($giftCards) > 0) {
+            if ($this->randomBool(25) && count($giftCards) > 0) {
                 $validCards = array_filter($giftCards, fn($gc) => $gc->isValid());
 
                 if (count($validCards) > 0) {
@@ -1080,14 +1134,14 @@ class AppFixtures extends Fixture
         $conversations = [];
 
         foreach ($bookings as $booking) {
-            if (!$this->randomBool(60)) continue;
+            if (!$this->randomBool(65)) continue;
 
             $conversation = new Conversation();
             $conversation->setAthlete($booking->getAthlete());
             $conversation->setCreator($booking->getCreator());
             $conversation->setBooking($booking);
 
-            $messageCount = rand(5, 15);
+            $messageCount = rand(5, 18);
             $this->createMessages($manager, $conversation, $messageCount);
 
             $manager->persist($conversation);
@@ -1110,7 +1164,7 @@ class AppFixtures extends Fixture
                 continue;
             }
 
-            if (!$this->randomBool(70)) continue;
+            if (!$this->randomBool(75)) continue;
 
             $service = $booking->getService();
             $deliverableCount = match($service->getKind()) {
@@ -1170,11 +1224,247 @@ class AppFixtures extends Fixture
             if ($booking->getStatus() !== Booking::STATUS_COMPLETED) continue;
             if ($booking->getDeliverables()->count() === 0) continue;
 
-            if (!$this->randomBool(80)) continue;
+            if (!$this->randomBool(85)) continue;
 
             $booking->setDeliverableDownloadedAt(new \DateTimeImmutable('-' . rand(1, 7) . ' days'));
             $booking->setDeliverablesUnlocked(true);
         }
+    }
+
+    // ============================================
+    // CREATE REVIEWS
+    // ============================================
+
+    private function createReviews(ObjectManager $manager, array $bookings): array
+    {
+        $reviews = [];
+
+        foreach ($bookings as $booking) {
+            if ($booking->getStatus() !== Booking::STATUS_COMPLETED) {
+                continue;
+            }
+
+            if (!$this->randomBool(75)) {
+                continue;
+            }
+
+            if ($booking->getReview()) {
+                continue;
+            }
+
+            $review = new Review($booking);
+            $review->setReviewer($booking->getAthlete());
+            $review->setCreator($booking->getCreator());
+
+            $rating = $this->weightedRandom([
+                5 => 50,
+                4 => 30,
+                3 => 15,
+                2 => 4,
+                1 => 1,
+            ]);
+
+            $review->setRating($rating);
+
+            if ($this->randomBool(65)) {
+                $comments = $rating >= 4 ? [
+                    'Excellent service! Very professional.',
+                    'Great experience, highly recommend!',
+                    'Amazing work, exceeded my expectations!',
+                    'Very satisfied with the quality.',
+                    'Good work, will book again.',
+                    'Professional and on time.',
+                    'Quality content, thank you!',
+                    'Perfect! Exactly what I needed.',
+                    'Great communication and results.',
+                    'Happy with the final product.',
+                    'Incredible talent and professionalism!',
+                    'Couldn\'t be happier with the results.',
+                    'Will definitely work together again.',
+                    'Top-notch quality and service.',
+                ] : [
+                    'Good but could be better.',
+                    'Average experience.',
+                    'Not quite what I expected.',
+                    'Decent work but had some issues.',
+                    'OK but room for improvement.',
+                    'Service was fine, nothing special.',
+                ];
+
+                $review->setComment($this->randomElement($comments));
+            }
+
+            $manager->persist($review);
+            $reviews[] = $review;
+        }
+
+        return $reviews;
+    }
+
+    // ============================================
+    // UPDATE CREATOR RATINGS
+    // ============================================
+
+    private function updateCreatorRatings(ObjectManager $manager, array $creators): void
+    {
+        foreach ($creators as $creator) {
+            $creatorProfile = $creator->getCreatorProfile();
+            if (!$creatorProfile) {
+                continue;
+            }
+
+            $reviews = $manager->getRepository(Review::class)->findBy(['creator' => $creator]);
+
+            if (empty($reviews)) {
+                $creatorProfile->setAvgRating(null);
+                $creatorProfile->setRatingsCount(0);
+                continue;
+            }
+
+            $totalRating = 0;
+            foreach ($reviews as $review) {
+                $totalRating += $review->getRating();
+            }
+
+            $avgRating = $totalRating / count($reviews);
+            $avgRatingFormatted = number_format($avgRating, 1);
+
+            $creatorProfile->setAvgRating($avgRatingFormatted);
+            $creatorProfile->setRatingsCount(count($reviews));
+        }
+
+        $manager->flush();
+    }
+
+    // ============================================
+    // OAUTH USERS
+    // ============================================
+
+    private function createOAuthUsers(ObjectManager $manager): array
+    {
+        $oauthUsers = [];
+
+        $googleUser = new User();
+        $googleUser->setUsername('google_athlete');
+        $googleUser->setEmail('googletest@example.com');
+        $googleUser->setPassword($this->passwordHasher->hashPassword($googleUser, self::PASSWORD));
+        $googleUser->setRoles([User::ROLE_ATHLETE]);
+        $googleUser->setFullName('Google Test User');
+        $googleUser->setUserPhoto('https://i.pravatar.cc/300?img=50');
+        $googleUser->setPhoneNumber('+33612345678');
+        $googleUser->setLocation('Paris, France');
+        $googleUser->setSport('football');
+        $googleUser->setIsVerified(true);
+        $googleUser->setIsActive(true);
+
+        $googleOAuth = new OAuthProvider($googleUser, 'google', '123456789012345678901');
+        $googleOAuth->setProviderEmail('googletest@example.com');
+        $googleOAuth->setProviderName('Google Test User');
+        $googleOAuth->setProviderPhotoUrl('https://i.pravatar.cc/300?img=50');
+        $googleOAuth->setProviderData([
+            'sub' => '123456789012345678901',
+            'email' => 'googletest@example.com',
+            'email_verified' => true,
+            'name' => 'Google Test User',
+            'picture' => 'https://i.pravatar.cc/300?img=50',
+        ]);
+
+        $googleUser->addOauthProvider($googleOAuth);
+        $manager->persist($googleUser);
+        $manager->persist($googleOAuth);
+        $oauthUsers[] = $googleUser;
+
+        $athleteProfile = new AthleteProfile($googleUser);
+        $athleteProfile->setDisplayName($googleUser->getUsername());
+        $athleteProfile->setSport('football');
+        $athleteProfile->setLevel('intermediate');
+        $athleteProfile->setBio('Passionate athlete who loves football and basketball');
+        $manager->persist($athleteProfile);
+
+        $appleUser = new User();
+        $appleUser->setUsername('apple_creator');
+        $appleUser->setEmail('appletest@example.com');
+        $appleUser->setPassword($this->passwordHasher->hashPassword($appleUser, self::PASSWORD));
+        $appleUser->setRoles([User::ROLE_CREATOR]);
+        $appleUser->setFullName('Apple Test Creator');
+        $appleUser->setUserPhoto('https://i.pravatar.cc/300?img=51');
+        $appleUser->setPhoneNumber('+33623456789');
+        $appleUser->setLocation('Lyon, France');
+        $appleUser->setSport('photography');
+        $appleUser->setIsVerified(true);
+        $appleUser->setIsActive(true);
+
+        $appleOAuth = new OAuthProvider($appleUser, 'apple', '000123.abc123def456.7890');
+        $appleOAuth->setProviderEmail('appletest@example.com');
+        $appleOAuth->setProviderName('Apple Test Creator');
+        $appleOAuth->setProviderData([
+            'sub' => '000123.abc123def456.7890',
+            'email' => 'appletest@example.com',
+            'email_verified' => true,
+        ]);
+
+        $appleUser->addOauthProvider($appleOAuth);
+        $manager->persist($appleUser);
+        $manager->persist($appleOAuth);
+        $oauthUsers[] = $appleUser;
+
+        $creatorProfile = new CreatorProfile($appleUser);
+        $creatorProfile->setDisplayName('Apple Test Creator');
+        $creatorProfile->setBaseCity('Lyon');
+        $creatorProfile->setBio('Professional photographer specializing in sports content. Testing OAuth integration.');
+        $creatorProfile->setSpecialties(['photography', 'action', 'sports']);
+        $creatorProfile->setGear(['Canon EOS R5', 'Sony A7IV', 'DJI Mavic 3']);
+        $creatorProfile->setTravelRadiusKm(50);
+        $manager->persist($creatorProfile);
+
+        $mixedUser = new User();
+        $mixedUser->setUsername('multi_oauth');
+        $mixedUser->setEmail('multioauth@example.com');
+        $mixedUser->setPassword($this->passwordHasher->hashPassword($mixedUser, self::PASSWORD));
+        $mixedUser->setRoles([User::ROLE_ATHLETE]);
+        $mixedUser->setFullName('Multi OAuth User');
+        $mixedUser->setUserPhoto('https://i.pravatar.cc/300?img=52');
+        $mixedUser->setPhoneNumber('+33634567890');
+        $mixedUser->setLocation('Marseille, France');
+        $mixedUser->setSport('tennis');
+        $mixedUser->setIsVerified(true);
+        $mixedUser->setIsActive(true);
+
+        $mixedGoogleOAuth = new OAuthProvider($mixedUser, 'google', '999888777666555444333');
+        $mixedGoogleOAuth->setProviderEmail('multioauth@example.com');
+        $mixedGoogleOAuth->setProviderName('Multi OAuth User');
+        $mixedGoogleOAuth->setProviderPhotoUrl('https://i.pravatar.cc/300?img=52');
+        $mixedGoogleOAuth->setProviderData([
+            'sub' => '999888777666555444333',
+            'email' => 'multioauth@example.com',
+            'email_verified' => true,
+            'name' => 'Multi OAuth User',
+        ]);
+
+        $mixedAppleOAuth = new OAuthProvider($mixedUser, 'apple', '000999.xyz789abc456.1234');
+        $mixedAppleOAuth->setProviderEmail('multioauth@example.com');
+        $mixedAppleOAuth->setProviderName('Multi OAuth User');
+        $mixedAppleOAuth->setProviderData([
+            'sub' => '000999.xyz789abc456.1234',
+            'email' => 'multioauth@example.com',
+            'email_verified' => true,
+        ]);
+
+        $mixedUser->addOauthProvider($mixedGoogleOAuth);
+        $mixedUser->addOauthProvider($mixedAppleOAuth);
+        $manager->persist($mixedUser);
+        $manager->persist($mixedGoogleOAuth);
+        $manager->persist($mixedAppleOAuth);
+        $oauthUsers[] = $mixedUser;
+
+        $athleteProfile2 = new AthleteProfile($mixedUser);
+        $athleteProfile2->setDisplayName($mixedUser->getUsername());
+        $athleteProfile2->setSport('tennis');
+        $athleteProfile2->setLevel('advanced');
+        $athleteProfile2->setBio('Advanced tennis and volleyball player');
+        $manager->persist($athleteProfile2);
+
+        return $oauthUsers;
     }
 
     // ============================================
@@ -1206,170 +1496,24 @@ class AppFixtures extends Fixture
             'Action shot! 🏀',
             'Training hard for the next match',
             'Best moment of the game!',
+            'Living my passion every day 🎯',
+            'Another day, another challenge 💯',
+            'Pushing my limits 🚀',
+            'This is what I love doing ❤️',
+            'Captured this incredible moment',
+            'Sports photography at its finest',
+            'Working on something special',
+            'Can\'t wait to share more!',
+            'Thank you for all the support 🙏',
+            'Epic session yesterday!',
         ];
 
         return $this->randomElement($captions);
     }
 
-    // ============================================
-    // CREATE REVIEWS
-    // ============================================
-
-    private function createReviews(ObjectManager $manager, array $bookings): array
-    {
-        $reviews = [];
-
-        foreach ($bookings as $booking) {
-            // Only create reviews for completed bookings
-            if ($booking->getStatus() !== Booking::STATUS_COMPLETED) {
-                continue;
-            }
-
-            // 70% of completed bookings get reviews
-            if (!$this->randomBool(70)) {
-                continue;
-            }
-
-            // Skip if already has a review
-            if ($booking->getReview()) {
-                continue;
-            }
-
-            $review = new Review($booking);
-            $review->setReviewer($booking->getAthlete());
-            $review->setCreator($booking->getCreator());
-
-            // Realistic rating distribution (weighted towards 4-5 stars)
-            $rating = $this->weightedRandom([
-                5 => 50,  // 50% are 5 stars
-                4 => 30,  // 30% are 4 stars
-                3 => 15,  // 15% are 3 stars
-                2 => 4,   // 4% are 2 stars
-                1 => 1,   // 1% are 1 star
-            ]);
-
-            $review->setRating($rating);
-
-            // 60% of reviews have comments
-            if ($this->randomBool(60)) {
-                $comments = [
-                    'Excellent service! Very professional.',
-                    'Great experience, highly recommend!',
-                    'Amazing work, exceeded my expectations!',
-                    'Very satisfied with the quality.',
-                    'Good work, will book again.',
-                    'Professional and on time.',
-                    'Quality content, thank you!',
-                    'Perfect! Exactly what I needed.',
-                    'Great communication and results.',
-                    'Happy with the final product.',
-                ];
-
-                if ($rating <= 3) {
-                    $comments = [
-                        'Good but could be better.',
-                        'Average experience.',
-                        'Not quite what I expected.',
-                        'Decent work but had some issues.',
-                        'OK but room for improvement.',
-                    ];
-                }
-
-                $review->setComment($this->randomElement($comments));
-            }
-
-            $manager->persist($review);
-            $reviews[] = $review;
-        }
-
-        return $reviews;
-    }
-
-    // ============================================
-    // UPDATE CREATOR RATINGS
-    // ============================================
-
-    private function updateCreatorRatings(ObjectManager $manager, array $creators): void
-    {
-        foreach ($creators as $creator) {
-            $creatorProfile = $creator->getCreatorProfile();
-            if (!$creatorProfile) {
-                continue;
-            }
-
-            // Get all reviews for this creator
-            $reviews = $manager->getRepository(Review::class)->findBy(['creator' => $creator]);
-
-            if (empty($reviews)) {
-                $creatorProfile->setAvgRating(null);
-                $creatorProfile->setRatingsCount(0);
-                continue;
-            }
-
-            // Calculate average
-            $totalRating = 0;
-            foreach ($reviews as $review) {
-                $totalRating += $review->getRating();
-            }
-
-            $avgRating = $totalRating / count($reviews);
-            $avgRatingFormatted = number_format($avgRating, 1);
-
-            $creatorProfile->setAvgRating($avgRatingFormatted);
-            $creatorProfile->setRatingsCount(count($reviews));
-        }
-
-        $manager->flush();
-    }
-
-    private function printDetailedSummary(
-        array $users,
-        array $services,
-        array $bookings,
-        array $payments,
-        array $feedPosts,
-        array $promoCodes,
-        array $giftCards,
-        array $reviews = []
-    ): void {
-        echo "📊 DETAILED SUMMARY:\n";
-        echo "════════════════════════════════════════════════════════════\n";
-        echo "   👥 Users: " . count($users) . "\n";
-        echo "   📸 Feed Posts: " . count($feedPosts) . "\n";
-        echo "   💼 Services: " . count($services) . "\n";
-        echo "   📖 Bookings: " . count($bookings) . "\n";
-        echo "   💵 Payments: " . count($payments) . "\n";
-
-        $paymentsWithPromo = count(array_filter($payments, fn($p) => $p->hasPromoCode()));
-        $paymentsWithGift = count(array_filter($payments, fn($p) => $p->hasGiftCard()));
-
-        echo "      - With promo code: {$paymentsWithPromo}\n";
-        echo "      - With gift card: {$paymentsWithGift}\n";
-        echo "   🎫 Promo Codes: " . count($promoCodes) . "\n";
-        echo "   🎁 Gift Cards: " . count($giftCards) . "\n";
-
-        $activeGiftCards = count(array_filter($giftCards, fn($gc) => $gc->isValid()));
-        echo "      - Active: {$activeGiftCards}\n";
-        echo "   ⭐ Reviews: " . count($reviews) . "\n";
-
-        echo "\n";
-        echo "🔐 LOGIN CREDENTIALS:\n";
-        echo "   Email: athlete1@example.com\n";
-        echo "   Email: creator1@example.com\n";
-        echo "   Password: " . self::PASSWORD . "\n";
-        echo "════════════════════════════════════════════════════════════\n";
-    }
-
-    // ============================================
-    // HELPER METHODS
-    // ============================================
-
     private function generateName(): string
     {
-        $firstNames = ['Jean', 'Marie', 'Pierre', 'Sophie', 'Lucas', 'Emma', 'Thomas', 'Julie', 'Antoine', 'Léa'];
-        $lastNames = ['Martin', 'Bernard', 'Dubois', 'Thomas', 'Robert', 'Richard', 'Petit', 'Durand', 'Leroy', 'Moreau'];
-
-        return $this->randomElement($firstNames) . ' ' . $this->randomElement($lastNames);
+        return $this->randomElement(self::FIRST_NAMES) . ' ' . $this->randomElement(self::LAST_NAMES);
     }
 
     private function generateBio(string $type): string
@@ -1380,12 +1524,24 @@ class AppFixtures extends Fixture
                 'Dedicated athlete striving for excellence.',
                 'Sports enthusiast. Let\'s train together!',
                 'Fitness lover. Health is wealth!',
+                'Competing at the highest level. Never give up!',
+                'Training hard, playing harder.',
+                'Living the athletic lifestyle 24/7.',
+                'Chasing dreams and breaking records.',
+                'Sports is not just a hobby, it\'s a lifestyle.',
+                'Pushing boundaries every single day.',
             ],
             'creator' => [
                 'Professional sports photographer with 10+ years experience.',
                 'Creating amazing sports content. Book your session today!',
                 'Capturing your best moments on the field.',
                 'Expert videographer specializing in sports events.',
+                'Telling stories through sports photography.',
+                'Professional content creator for athletes.',
+                'Bringing your sports moments to life.',
+                'Award-winning sports photographer.',
+                'Specialized in action and sports photography.',
+                'Making athletes look their absolute best.',
             ],
         ];
 
@@ -1401,13 +1557,13 @@ class AppFixtures extends Fixture
 
     private function randomPrice(): int
     {
-        $prices = [5000, 7500, 10000, 15000, 20000, 25000, 30000, 40000, 50000];
+        $prices = [3000, 5000, 7500, 10000, 12500, 15000, 20000, 25000, 30000, 40000, 50000, 75000, 100000];
         return $this->randomElement($prices);
     }
 
     private function randomDuration(): int
     {
-        $durations = [30, 60, 90, 120, 180, 240];
+        $durations = [30, 45, 60, 90, 120, 150, 180, 240, 300];
         return $this->randomElement($durations);
     }
 
@@ -1419,6 +1575,16 @@ class AppFixtures extends Fixture
             '2-hour video edited and delivered within 48h',
             '30-minute highlights video + raw footage',
             'Complete event coverage with 100+ photos',
+            '15 social media ready photos',
+            '10 edited photos + 5 short video clips',
+            'Full HD video with color grading',
+            '30 photos with basic retouching',
+            'Professional photo album with 40 images',
+            '4K video footage with cinematic editing',
+            'All raw files + 25 edited photos',
+            'Highlight reel under 3 minutes',
+            '60 photos delivered within 72 hours',
+            'Drone footage + ground photography',
         ];
 
         return $this->randomElement($options);
@@ -1432,9 +1598,19 @@ class AppFixtures extends Fixture
             'Need photos for my social media.',
             'Event starts at 10 AM sharp.',
             'Special requirements: action shots needed.',
+            'Indoor venue, please prepare accordingly.',
+            'Need both photo and video coverage.',
+            'This is for a competition, need high quality.',
+            'Please arrive 15 minutes early.',
+            'Weather dependent, may need to reschedule.',
+            'Group session with 5 people.',
+            'Need fast turnaround for this project.',
+            'Specific poses and angles required.',
+            'Client wants natural, candid shots.',
+            'Professional headshots also needed.',
         ];
 
-        return $this->randomBool(60) ? $this->randomElement($notes) : '';
+        return $this->randomBool(65) ? $this->randomElement($notes) : '';
     }
 
     private function generateLast4(): string
@@ -1444,7 +1620,18 @@ class AppFixtures extends Fixture
 
     private function randomCollection(): string
     {
-        $collections = ['Favorites', 'To Book', 'Top Photographers', 'My List'];
+        $collections = [
+            'Favorites', 
+            'To Book', 
+            'Top Photographers', 
+            'My List',
+            'Bookmarked',
+            'Interested',
+            'For Later',
+            'Recommended',
+            'Best Creators',
+            'Must Try',
+        ];
         return $this->randomElement($collections);
     }
 
@@ -1464,7 +1651,7 @@ class AppFixtures extends Fixture
         return rand(1, 100) <= $truePercentage;
     }
 
-    private function weightedRandom(array $weights): string
+    private function weightedRandom(array $weights): mixed
     {
         $rand = rand(1, array_sum($weights));
         foreach ($weights as $option => $weight) {
@@ -1476,156 +1663,77 @@ class AppFixtures extends Fixture
         return array_key_first($weights);
     }
 
-    /**
-     * Create OAuth test users (Google and Apple)
-     */
-    private function createOAuthUsers(ObjectManager $manager): array
-    {
-        $oauthUsers = [];
+    private function printDetailedSummary(
+        array $users,
+        array $services,
+        array $bookings,
+        array $payments,
+        array $feedPosts,
+        array $promoCodes,
+        array $giftCards,
+        array $reviews = []
+    ): void {
+        echo "📊 DETAILED SUMMARY:\n";
+        echo "════════════════════════════════════════════════════════════\n";
+        echo "   👥 Users: " . count($users) . "\n";
+        echo "   📸 Feed Posts: " . count($feedPosts) . "\n";
+        echo "   💼 Services: " . count($services) . "\n";
+        echo "   📖 Bookings: " . count($bookings) . "\n";
+        
+        // Booking status breakdown
+        $statusCounts = [
+            Booking::STATUS_PENDING => 0,
+            Booking::STATUS_ACCEPTED => 0,
+            Booking::STATUS_COMPLETED => 0,
+            Booking::STATUS_CANCELLED => 0,
+        ];
+        foreach ($bookings as $booking) {
+            $status = $booking->getStatus();
+            if (isset($statusCounts[$status])) {
+                $statusCounts[$status]++;
+            }
+        }
+        
+        echo "      - Pending: {$statusCounts[Booking::STATUS_PENDING]}\n";
+        echo "      - Accepted: {$statusCounts[Booking::STATUS_ACCEPTED]}\n";
+        echo "      - Completed: {$statusCounts[Booking::STATUS_COMPLETED]}\n";
+        echo "      - Cancelled: {$statusCounts[Booking::STATUS_CANCELLED]}\n";
+        
+        echo "   💵 Payments: " . count($payments) . "\n";
 
-        // Google OAuth user - Athlete
-        $googleUser = new User();
-        $googleUser->setUsername('google_athlete');
-        $googleUser->setEmail('googletest@example.com');
-        $googleUser->setPassword($this->passwordHasher->hashPassword($googleUser, self::PASSWORD));
-        $googleUser->setRoles([User::ROLE_ATHLETE]);
-        $googleUser->setFullName('Google Test User');
-        $googleUser->setUserPhoto('https://i.pravatar.cc/300?img=50');
-        $googleUser->setPhoneNumber('+33612345678');
-        $googleUser->setLocation('Paris, France');
-        $googleUser->setSport('football');
-        $googleUser->setIsVerified(true);
-        $googleUser->setIsActive(true);
+        $paymentsWithPromo = count(array_filter($payments, fn($p) => $p->hasPromoCode()));
+        $paymentsWithGift = count(array_filter($payments, fn($p) => $p->hasGiftCard()));
 
-        $googleOAuth = new OAuthProvider($googleUser, 'google', '123456789012345678901');
-        $googleOAuth->setProviderEmail('googletest@example.com');
-        $googleOAuth->setProviderName('Google Test User');
-        $googleOAuth->setProviderPhotoUrl('https://i.pravatar.cc/300?img=50');
-        $googleOAuth->setProviderData([
-            'sub' => '123456789012345678901',
-            'email' => 'googletest@example.com',
-            'email_verified' => true,
-            'name' => 'Google Test User',
-            'picture' => 'https://i.pravatar.cc/300?img=50',
-        ]);
+        echo "      - With promo code: {$paymentsWithPromo}\n";
+        echo "      - With gift card: {$paymentsWithGift}\n";
+        echo "   🎫 Promo Codes: " . count($promoCodes) . "\n";
+        echo "   🎁 Gift Cards: " . count($giftCards) . "\n";
 
-        $googleUser->addOauthProvider($googleOAuth);
-        $manager->persist($googleUser);
-        $manager->persist($googleOAuth);
-        $oauthUsers[] = $googleUser;
+        $activeGiftCards = count(array_filter($giftCards, fn($gc) => $gc->isValid()));
+        echo "      - Active: {$activeGiftCards}\n";
+        echo "   ⭐ Reviews: " . count($reviews) . "\n";
 
-        // Create athlete profile
-        $athleteProfile = new AthleteProfile($googleUser);
-        $athleteProfile->setPreferredSports(['football', 'basketball']);
-        $athleteProfile->setSkillLevel('intermediate');
-        $manager->persist($athleteProfile);
+        if (count($reviews) > 0) {
+            $totalRating = 0;
+            foreach ($reviews as $review) {
+                $totalRating += $review->getRating();
+            }
+            $avgRating = round($totalRating / count($reviews), 2);
+            echo "      - Average Rating: {$avgRating}/5\n";
+        }
 
-        // Apple OAuth user - Creator
-        $appleUser = new User();
-        $appleUser->setUsername('apple_creator');
-        $appleUser->setEmail('appletest@example.com');
-        $appleUser->setPassword($this->passwordHasher->hashPassword($appleUser, self::PASSWORD));
-        $appleUser->setRoles([User::ROLE_CREATOR]);
-        $appleUser->setFullName('Apple Test Creator');
-        $appleUser->setUserPhoto('https://i.pravatar.cc/300?img=51');
-        $appleUser->setPhoneNumber('+33623456789');
-        $appleUser->setLocation('Lyon, France');
-        $appleUser->setSport('photography');
-        $appleUser->setIsVerified(true);
-        $appleUser->setIsActive(true);
-
-        $appleOAuth = new OAuthProvider($appleUser, 'apple', '000123.abc123def456.7890');
-        $appleOAuth->setProviderEmail('appletest@example.com');
-        $appleOAuth->setProviderName('Apple Test Creator');
-        $appleOAuth->setProviderData([
-            'sub' => '000123.abc123def456.7890',
-            'email' => 'appletest@example.com',
-            'email_verified' => true,
-        ]);
-
-        $appleUser->addOauthProvider($appleOAuth);
-        $manager->persist($appleUser);
-        $manager->persist($appleOAuth);
-        $oauthUsers[] = $appleUser;
-
-        // Create creator profile
-        $creatorProfile = new CreatorProfile($appleUser);
-        $creatorProfile->setDisplayName('Apple Test Creator');
-        $creatorProfile->setBaseCity('Lyon');
-        $creatorProfile->setBio('Professional photographer specializing in sports content. Testing OAuth integration.');
-        $creatorProfile->setSpecialties(['photography', 'action', 'sports']);
-        $creatorProfile->setGear(['Canon EOS R5', 'Sony A7IV', 'DJI Mavic 3']);
-        $creatorProfile->setTravelRadiusKm(50);
-        $manager->persist($creatorProfile);
-
-        // Mixed OAuth user - Has both Google and Apple linked
-        $mixedUser = new User();
-        $mixedUser->setUsername('multi_oauth');
-        $mixedUser->setEmail('multioauth@example.com');
-        $mixedUser->setPassword($this->passwordHasher->hashPassword($mixedUser, self::PASSWORD));
-        $mixedUser->setRoles([User::ROLE_ATHLETE]);
-        $mixedUser->setFullName('Multi OAuth User');
-        $mixedUser->setUserPhoto('https://i.pravatar.cc/300?img=52');
-        $mixedUser->setPhoneNumber('+33634567890');
-        $mixedUser->setLocation('Marseille, France');
-        $mixedUser->setSport('tennis');
-        $mixedUser->setIsVerified(true);
-        $mixedUser->setIsActive(true);
-
-        // Link both Google and Apple
-        $mixedGoogleOAuth = new OAuthProvider($mixedUser, 'google', '999888777666555444333');
-        $mixedGoogleOAuth->setProviderEmail('multioauth@example.com');
-        $mixedGoogleOAuth->setProviderName('Multi OAuth User');
-        $mixedGoogleOAuth->setProviderPhotoUrl('https://i.pravatar.cc/300?img=52');
-        $mixedGoogleOAuth->setProviderData([
-            'sub' => '999888777666555444333',
-            'email' => 'multioauth@example.com',
-            'email_verified' => true,
-            'name' => 'Multi OAuth User',
-        ]);
-
-        $mixedAppleOAuth = new OAuthProvider($mixedUser, 'apple', '000999.xyz789abc456.1234');
-        $mixedAppleOAuth->setProviderEmail('multioauth@example.com');
-        $mixedAppleOAuth->setProviderName('Multi OAuth User');
-        $mixedAppleOAuth->setProviderData([
-            'sub' => '000999.xyz789abc456.1234',
-            'email' => 'multioauth@example.com',
-            'email_verified' => true,
-        ]);
-
-        $mixedUser->addOauthProvider($mixedGoogleOAuth);
-        $mixedUser->addOauthProvider($mixedAppleOAuth);
-        $manager->persist($mixedUser);
-        $manager->persist($mixedGoogleOAuth);
-        $manager->persist($mixedAppleOAuth);
-        $oauthUsers[] = $mixedUser;
-
-        // Create athlete profile
-        $athleteProfile2 = new AthleteProfile($mixedUser);
-        $athleteProfile2->setPreferredSports(['tennis', 'volleyball']);
-        $athleteProfile2->setSkillLevel('advanced');
-        $manager->persist($athleteProfile2);
-
-        return $oauthUsers;
-    }
-
-    private function printSummary(array $users, array $services, array $bookings, array $conversations): void
-    {
-        echo "📊 SUMMARY:\n";
-        echo "   • Users: " . count($users) . "\n";
-        echo "   • Services: " . count($services) . "\n";
-        echo "   • Bookings: " . count($bookings) . "\n";
-        echo "   • Conversations: " . count($conversations) . "\n";
         echo "\n";
         echo "🔐 LOGIN CREDENTIALS:\n";
-        echo "   Email: athlete1@example.com\n";
-        echo "   Email: creator1@example.com\n";
-        echo "   Password: " . self::PASSWORD . "\n";
-        echo "\n";
-        echo "🔐 OAUTH TEST USERS:\n";
-        echo "   Google: googletest@example.com (Athlete)\n";
-        echo "   Apple: appletest@example.com (Creator)\n";
-        echo "   Multi: multioauth@example.com (Both Google + Apple)\n";
-        echo "   Password: " . self::PASSWORD . "\n";
+        echo "════════════════════════════════════════════════════════════\n";
+        echo "   Regular Users:\n";
+        echo "   - Athlete: athlete1@example.com\n";
+        echo "   - Creator: creator1@example.com\n";
+        echo "   - Password: " . self::PASSWORD . "\n\n";
+        echo "   OAuth Test Users:\n";
+        echo "   - Google: googletest@example.com (Athlete)\n";
+        echo "   - Apple: appletest@example.com (Creator)\n";
+        echo "   - Multi-OAuth: multioauth@example.com (Google + Apple)\n";
+        echo "   - Password: " . self::PASSWORD . "\n";
+        echo "════════════════════════════════════════════════════════════\n";
     }
 }

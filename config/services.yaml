@@ -56,6 +56,10 @@ services:
         $em: '@doctrine.orm.entity_manager'
         $stripeSecretKey: '%stripe_secret_key%'
 
+  App\Service\BankPayoutService:
+    arguments:
+        $stripeSecretKey: '%stripe_secret_key%'
+
   App\Controller\StripeWebhookController:
     arguments:
         $stripeSecretKey: '%stripe_secret_key%'

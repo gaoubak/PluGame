@@ -33,7 +33,7 @@ class Payment
     private ?Booking $booking = null;
 
     #[ORM\Column(type: 'integer')]
-    #[Groups(['payment:read', 'payment:write'])]
+    #[Groups(['payment:read', 'payment:write','booking:read'])]
     private int $amountCents = 0;
 
     #[ORM\Column(type: 'string', length: 3, options: ['default' => 'EUR'])]
@@ -45,7 +45,7 @@ class Payment
     private string $paymentMethod = 'card';
 
     #[ORM\Column(type: 'string', length: 20)]
-    #[Groups(['payment:read'])]
+    #[Groups(['payment:read','booking:read'])]
     private string $status = self::STATUS_PENDING;
 
     #[ORM\Column(type: 'string', length: 255, nullable: true)]
@@ -57,7 +57,7 @@ class Payment
     private string $paymentGateway = 'stripe';
 
     #[ORM\Column(type: 'json', nullable: true)]
-    #[Groups(['payment:read'])]
+    #[Groups(['payment:read','booking:read'])]
     private ?array $metadata = null;
 
     #[ORM\Column(type: 'string', length: 255, nullable: true)]

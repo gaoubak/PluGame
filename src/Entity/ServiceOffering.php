@@ -27,11 +27,11 @@ class ServiceOffering
 
     // basic fields
     #[ORM\Column(type: 'string')]
-    #[Groups(['service:read', 'service:write', 'user:read'])]
+    #[Groups(['service:read', 'service:write', 'user:read','booking:read'])]
     private string $title;
 
     #[ORM\Column(type: 'text', nullable: true)]
-    #[Groups(['service:read','service:write', 'user:read'])]
+    #[Groups(['service:read','service:write', 'user:read','booking:read'])]
     private ?string $description = null;
 
     #[ORM\Column(type: 'integer', options: ['default' => 60])]
@@ -39,7 +39,7 @@ class ServiceOffering
     private int $durationMin = 60;
 
     #[ORM\Column(type: 'integer', options: ['default' => 0])]
-    #[Groups(['service:read','service:write', 'user:read'])]
+    #[Groups(['service:read','service:write', 'user:read','booking:read'])]
     private int $priceCents = 0;
 
     /**
@@ -84,14 +84,14 @@ class ServiceOffering
      * For PER_ASSET: price per asset in cents
      */
     #[ORM\Column(type: 'integer', nullable: true)]
-    #[Groups(['service:read','service:write','user:read'])]
+    #[Groups(['service:read','service:write','user:read','booking:read'])]
     private ?int $pricePerAssetCents = null;
 
     /**
      * For PACKAGE: total package price in cents
      */
     #[ORM\Column(type: 'integer', nullable: true)]
-    #[Groups(['service:read','service:write','user:read'])]
+    #[Groups(['service:read','service:write','user:read','booking:read'])]
     private ?int $priceTotalCents = null;
 
     /**

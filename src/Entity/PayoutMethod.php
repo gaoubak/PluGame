@@ -34,6 +34,14 @@ class PayoutMethod
     #[ORM\Column(type: 'string', length: 50, nullable: true)]
     private ?string $accountLast4 = null;
 
+    // IBAN for SEPA bank transfers (encrypted/hashed in production)
+    #[ORM\Column(type: 'string', length: 34, nullable: true)]
+    private ?string $iban = null;
+
+    // BIC/SWIFT code for international transfers
+    #[ORM\Column(type: 'string', length: 11, nullable: true)]
+    private ?string $bic = null;
+
     #[ORM\Column(type: 'string', length: 255, nullable: true)]
     private ?string $stripeAccountId = null;
 
@@ -103,6 +111,33 @@ class PayoutMethod
     public function setAccountLast4(?string $accountLast4): self
     {
         $this->accountLast4 = $accountLast4;
+        return $this;
+    }
+
+    public function getIban(): ?string
+    {
+        return $this->iban;
+    }
+
+    public function setIban(?string $iban): self
+    {
+        // Store only the last 4 characters in accountLast4 for display
+        if ($iban) {
+            $cleanIban = str_replace(' ', '', $iban);
+            $this->accountLast4 = substr($cleanIban, -4);
+        }
+        $this->iban = $iban;
+        return $this;
+    }
+
+    public function getBic(): ?string
+    {
+        return $this->bic;
+    }
+
+    public function setBic(?string $bic): self
+    {
+        $this->bic = $bic;
         return $this;
     }
 

@@ -193,6 +193,15 @@ class UserController extends AbstractController
         if (isset($payload['bio'])) {
             $user->setBio((string)$payload['bio']);
         }
+        if (isset($payload['description'])) {
+            $user->setDescription((string)$payload['description']);
+        }
+        if (isset($payload['phoneNumber'])) {
+            $user->setPhoneNumber((string)$payload['phoneNumber']);
+        }
+        if (isset($payload['locale'])) {
+            $user->setLocale((string)$payload['locale']);
+        }
         if (isset($payload['avatarUrl'])) {
             $user->setAvatarUrl((string)$payload['avatarUrl']);
         }
@@ -205,6 +214,61 @@ class UserController extends AbstractController
         if (isset($payload['location'])) {
             $user->setLocation((string)$payload['location']);
         }
+
+        // Handle nested athleteProfile data
+        if (isset($payload['athleteProfile']) && is_array($payload['athleteProfile'])) {
+            $athleteProfile = $user->getAthleteProfile();
+
+            // Create athlete profile if it doesn't exist
+            if (!$athleteProfile) {
+                $athleteProfile = new \App\Entity\AthleteProfile($user);
+                $user->setAthleteProfile($athleteProfile);
+                $this->em->persist($athleteProfile);
+            }
+
+            $profileData = $payload['athleteProfile'];
+
+            if (isset($profileData['displayName'])) {
+                $athleteProfile->setDisplayName((string)$profileData['displayName']);
+            }
+            if (isset($profileData['bio'])) {
+                $athleteProfile->setBio((string)$profileData['bio']);
+            }
+            if (isset($profileData['homeCity'])) {
+                $athleteProfile->setHomeCity((string)$profileData['homeCity']);
+            }
+            if (isset($profileData['sport'])) {
+                $athleteProfile->setSport((string)$profileData['sport']);
+            }
+            if (isset($profileData['level'])) {
+                $athleteProfile->setLevel((string)$profileData['level']);
+            }
+        }
+
+        // Handle nested creatorProfile data
+        if (isset($payload['creatorProfile']) && is_array($payload['creatorProfile'])) {
+            $creatorProfile = $user->getCreatorProfile();
+
+            // Create creator profile if it doesn't exist
+            if (!$creatorProfile) {
+                $creatorProfile = new \App\Entity\CreatorProfile($user);
+                $user->setCreatorProfile($creatorProfile);
+                $this->em->persist($creatorProfile);
+            }
+
+            $profileData = $payload['creatorProfile'];
+
+            if (isset($profileData['displayName'])) {
+                $creatorProfile->setDisplayName((string)$profileData['displayName']);
+            }
+            if (isset($profileData['bio'])) {
+                $creatorProfile->setBio((string)$profileData['bio']);
+            }
+            if (isset($profileData['baseCity'])) {
+                $creatorProfile->setBaseCity((string)$profileData['baseCity']);
+            }
+        }
+
         // roles and other sensitive fields should be managed by admin flows
 
         $this->em->flush();

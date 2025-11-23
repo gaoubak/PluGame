@@ -8,7 +8,7 @@ use Doctrine\ORM\Mapping as ORM;
 trait Timestamps
 {
     #[ORM\Column(type: 'datetime_immutable')]
-    #[Groups(['booking:read','user:read','conversation:read','conversation:write','comment:read'])]
+    #[Groups(['booking:read','user:read','conversation:read','conversation:write','comment:read','review:read'])]
     private \DateTimeImmutable $createdAt;
 
     #[ORM\Column(type: 'datetime_immutable')]

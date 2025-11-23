@@ -40,4 +40,35 @@ class MessageRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
+
+    /**
+     * Count messages in a conversation
+     */
+    public function countByConversation($conversation): int
+    {
+        return (int) $this->createQueryBuilder('m')
+            ->select('COUNT(m.id)')
+            ->where('m.conversation = :conversation')
+            ->setParameter('conversation', $conversation)
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
+    /**
+     * Find messages in a conversation with pagination
+     *
+     * @return Message[]
+     */
+    public function findByConversationPaginated($conversation, int $limit, int $offset): array
+    {
+        return $this->createQueryBuilder('m')
+            ->where('m.conversation = :conversation')
+            ->setParameter('conversation', $conversation)
+            ->orderBy('m.createdAt', 'ASC')
+            ->addOrderBy('m.id', 'ASC')
+            ->setMaxResults($limit)
+            ->setFirstResult($offset)
+            ->getQuery()
+            ->getResult();
+    }
 }

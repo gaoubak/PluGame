@@ -270,14 +270,15 @@ class DashboardController extends AbstractController
 
         $limit = min(10, max(1, (int) $request->query->get('limit', 5)));
 
-        // Get bookings with completed payouts
+        // Get bookings where remaining payment has been made (revenue earned)
+        // Note: remainingPaidAt is set when athlete completes the 70% payment
         $bookings = $this->em->createQueryBuilder()
             ->select('b')
             ->from('App\Entity\Booking', 'b')
             ->where('b.creator = :creator')
-            ->andWhere('b.payoutCompletedAt IS NOT NULL')
+            ->andWhere('b.remainingPaidAt IS NOT NULL')
             ->setParameter('creator', $user)
-            ->orderBy('b.payoutCompletedAt', 'DESC')
+            ->orderBy('b.remainingPaidAt', 'DESC')
             ->setMaxResults($limit)
             ->getQuery()
             ->getResult();
@@ -286,10 +287,19 @@ class DashboardController extends AbstractController
             $athlete = $booking->getAthlete();
             $service = $booking->getService();
 
+            // Calculate creator's revenue (total - platform fee)
+            $totalCents = $booking->getTotalCents();
+            $platformFeePercent = 15; // 15% platform fee
+            $platformFeeCents = (int) ($totalCents * ($platformFeePercent / 100));
+            $creatorAmountCents = $totalCents - $platformFeeCents;
+
             return [
                 'id' => $booking->getId(),
-                'amountCents' => $booking->getCreatorAmountCents(),
-                'createdAt' => $booking->getPayoutCompletedAt()->format(\DATE_ATOM),
+                'amountCents' => $creatorAmountCents,
+                'totalCents' => $totalCents,
+                'platformFeeCents' => $platformFeeCents,
+                'isPaidOut' => $booking->getPayoutCompletedAt() !== null,
+                'createdAt' => $booking->getRemainingPaidAt()->format(\DATE_ATOM),
                 'booking' => [
                     'id' => $booking->getId(),
                     'service' => $service?->getTitle(),

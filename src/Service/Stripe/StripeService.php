@@ -251,12 +251,28 @@ final class StripeService
     }
 
     /**
-     * Refund payment
+     * Refund payment using Payment entity
      */
     public function refund(Payment $payment, ?int $amountCents = null): Refund
     {
         $refundData = [
             'payment_intent' => $payment->getStripePaymentIntentId(),
+        ];
+
+        if ($amountCents) {
+            $refundData['amount'] = $amountCents;
+        }
+
+        return $this->stripe->refunds->create($refundData);
+    }
+
+    /**
+     * Refund payment using payment intent ID directly
+     */
+    public function refundByPaymentIntentId(string $paymentIntentId, ?int $amountCents = null): Refund
+    {
+        $refundData = [
+            'payment_intent' => $paymentIntentId,
         ];
 
         if ($amountCents) {
